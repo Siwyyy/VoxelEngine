@@ -1,8 +1,10 @@
 #include "Engine.h"
+#include "../input/GLFWInput.h"
 
 VoxelEngine::VoxelEngine()
 {
     m_window = std::make_unique<Window>(m_width, m_height, "Voxel Engine");
+    m_input = std::make_unique<GLFWInput>(m_window->getGLFWwindow());
 }
 
 VoxelEngine::~VoxelEngine() = default;

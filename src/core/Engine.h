@@ -14,6 +14,7 @@ public:
 
 private:
     std::unique_ptr<Window> m_window;
+    std::unique_ptr<class Input> m_input;
     VulkanContext m_vulkanContext;
 
     const uint32_t m_width = 800;
