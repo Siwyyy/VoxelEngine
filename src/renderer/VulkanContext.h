@@ -1,13 +1,16 @@
 #pragma once
-
 #include "Buffer.h"
+#include <glm/glm.hpp>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vk_mem_alloc.h>
 #include <vector>
 #include <optional>
 #include <algorithm>
 #include <string>
 #include <memory>
+
+class Chunk;
 
 struct SwapChainSupportDetails
 {
@@ -50,9 +53,19 @@ public:
     ~VulkanContext();
 
     void init(GLFWwindow* window);
-    void drawFrame();
-    void deviceWaitIdle() const;
     void cleanup();
+    void deviceWaitIdle() const;
+    void drawFrame(const glm::mat4& viewMatrix, const std::vector<Chunk*>& chunks);
+
+    void initImGui(GLFWwindow* window);
+    void cleanupImGui();
+    void renderImGui(VkCommandBuffer commandBuffer);
+
+    [[nodiscard]] VkDevice getDevice() const { return m_device; }
+    [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
+    [[nodiscard]] VmaAllocator getAllocator() const { return m_allocator; }
+
+    [[nodiscard]] uint32_t getDrawnChunksCount() const { return m_drawnChunksCount; }
 
 private:
     VkInstance m_instance = nullptr;
@@ -60,6 +73,7 @@ private:
     VkSurfaceKHR m_surface = VK_NULL_HANDLE;
     VkPhysicalDevice m_physicalDevice = VK_NULL_HANDLE;
     VkDevice m_device = VK_NULL_HANDLE;
+    VmaAllocator m_allocator = VK_NULL_HANDLE;
     VkQueue m_graphicsQueue = VK_NULL_HANDLE;
     VkQueue m_presentQueue = VK_NULL_HANDLE;
 
@@ -73,12 +87,9 @@ private:
     std::vector<VkCommandBuffer> m_commandBuffers;
 
     VkImage m_depthImage = VK_NULL_HANDLE;
-    VkDeviceMemory m_depthImageMemory = VK_NULL_HANDLE;
+    VmaAllocation m_depthImageAllocation = VK_NULL_HANDLE;
     VkImageView m_depthImageView = VK_NULL_HANDLE;
     VkFormat m_depthFormat;
-
-    std::unique_ptr<Buffer> m_vertexBuffer;
-    std::unique_ptr<Buffer> m_indexBuffer;
 
     std::unique_ptr<class GraphicsPipeline> m_graphicsPipeline;
 
@@ -86,6 +97,8 @@ private:
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
     std::vector<VkFence> m_inFlightFences;
     uint32_t m_currentFrame = 0;
+    
+    uint32_t m_drawnChunksCount = 0;
 
     void createInstance();
     void setupDebugMessenger();
@@ -95,18 +108,19 @@ private:
     void createSwapchain(GLFWwindow* window);
     void createImageViews();
     void createDepthResources();
-    void createVertexAndIndexBuffers();
     void createCommandPool();
     void createCommandBuffers();
     void createSyncObjects();
-    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
+    void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const glm::mat4& viewMatrix,
+                             const std::vector<Chunk*>& chunks);
 
     [[nodiscard]] bool isDeviceSuitable(VkPhysicalDevice device) const;
     [[nodiscard]] bool checkDeviceExtensionSupport(VkPhysicalDevice device) const;
     [[nodiscard]] QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
 
     [[nodiscard]] uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
-    [[nodiscard]] VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const;
+    [[nodiscard]] VkFormat findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
+                                               VkFormatFeatureFlags features) const;
     [[nodiscard]] VkFormat findDepthFormat() const;
 
     [[nodiscard]] SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;

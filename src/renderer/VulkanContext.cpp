@@ -2,7 +2,8 @@
 #include "../utils/FileSystem.h"
 #include "GraphicsPipeline.h"
 #include "Shader.h"
-#include "VoxelMesh.h"
+#include "../world/Chunk.h"
+#include "../core/Frustum.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <chrono>
 #include <iostream>
@@ -13,6 +14,10 @@
 #include <limits>
 #include <algorithm>
 #include <fstream>
+
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_vulkan.h>
 
 namespace
 {
@@ -50,15 +55,16 @@ void VulkanContext::init(GLFWwindow* window)
     createSwapchain(window);
     createImageViews();
     createDepthResources();
-    createVertexAndIndexBuffers();
-    
+
     Shader vertShader(m_device, "shaders/shader.vert.spv");
     Shader fragShader(m_device, "shaders/shader.frag.spv");
-    m_graphicsPipeline = std::make_unique<GraphicsPipeline>(m_device, m_swapchainImageFormat, m_depthFormat, vertShader, fragShader);
+    m_graphicsPipeline = std::make_unique<GraphicsPipeline>(m_device, m_swapchainImageFormat, m_depthFormat, vertShader,
+                                                            fragShader);
 
     createCommandPool();
     createCommandBuffers();
     createSyncObjects();
+    initImGui(window);
 }
 
 void VulkanContext::deviceWaitIdle() const
@@ -71,21 +77,30 @@ VulkanContext::~VulkanContext() = default;
 
 void VulkanContext::cleanup()
 {
-    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    cleanupImGui();
+
+    vkDeviceWaitIdle(m_device);
+
+    for (size_t i = 0; i < m_renderFinishedSemaphores.size(); i++)
     {
         vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
+    }
+    for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+    {
         vkDestroySemaphore(m_device, m_imageAvailableSemaphores[i], nullptr);
         vkDestroyFence(m_device, m_inFlightFences[i], nullptr);
     }
+
     vkDestroyCommandPool(m_device, m_commandPool, nullptr);
 
-    vkDestroyImageView(m_device, m_depthImageView, nullptr);
-    vkDestroyImage(m_device, m_depthImage, nullptr);
-    vkFreeMemory(m_device, m_depthImageMemory, nullptr);
-
     m_graphicsPipeline.reset();
-    m_vertexBuffer.reset();
-    m_indexBuffer.reset();
+
+    if (m_depthImage != VK_NULL_HANDLE) {
+        vmaDestroyImage(m_allocator, m_depthImage, m_depthImageAllocation);
+        vkDestroyImageView(m_device, m_depthImageView, nullptr);
+    }
+
+    vmaDestroyAllocator(m_allocator);
 
     for (auto imageView : m_swapchainImageViews)
     {
@@ -285,6 +300,15 @@ void VulkanContext::createLogicalDevice()
 
     vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
     vkGetDeviceQueue(m_device, indices.presentFamily.value(), 0, &m_presentQueue);
+    
+    VmaAllocatorCreateInfo allocatorInfo = {};
+    allocatorInfo.physicalDevice = m_physicalDevice;
+    allocatorInfo.device = m_device;
+    allocatorInfo.instance = m_instance;
+    allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
+    if (vmaCreateAllocator(&allocatorInfo, &m_allocator) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create VMA allocator!");
+    }
 }
 
 SwapChainSupportDetails VulkanContext::querySwapChainSupport(VkPhysicalDevice device) const
@@ -484,7 +508,7 @@ void VulkanContext::createCommandBuffers()
 void VulkanContext::createSyncObjects()
 {
     m_imageAvailableSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
-    m_renderFinishedSemaphores.resize(MAX_FRAMES_IN_FLIGHT);
+    m_renderFinishedSemaphores.resize(m_swapchainImageViews.size());
     m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
     VkSemaphoreCreateInfo semaphoreInfo{};
@@ -497,15 +521,22 @@ void VulkanContext::createSyncObjects()
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
         if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_imageAvailableSemaphores[i]) != VK_SUCCESS ||
-            vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS ||
             vkCreateFence(m_device, &fenceInfo, nullptr, &m_inFlightFences[i]) != VK_SUCCESS)
         {
             throw std::runtime_error("Failed to create synchronization objects for a frame!");
         }
     }
+
+    for (size_t i = 0; i < m_swapchainImageViews.size(); i++)
+    {
+        if (vkCreateSemaphore(m_device, &semaphoreInfo, nullptr, &m_renderFinishedSemaphores[i]) != VK_SUCCESS)
+        {
+            throw std::runtime_error("Failed to create render finished semaphores!");
+        }
+    }
 }
 
-void VulkanContext::drawFrame()
+void VulkanContext::drawFrame(const glm::mat4& viewMatrix, const std::vector<Chunk*>& chunks)
 {
     vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
     vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
@@ -515,7 +546,7 @@ void VulkanContext::drawFrame()
                           &imageIndex);
 
     vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
-    recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex);
+    recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex, viewMatrix, chunks);
 
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -529,7 +560,7 @@ void VulkanContext::drawFrame()
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &m_commandBuffers[m_currentFrame];
 
-    VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[m_currentFrame]};
+    VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[imageIndex]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 
@@ -555,7 +586,8 @@ void VulkanContext::drawFrame()
     m_currentFrame = (m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const glm::mat4& viewMatrix,
+                                        const std::vector<Chunk*>& chunks)
 {
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -594,12 +626,13 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     depthBarrier.subresourceRange.baseArrayLayer = 0;
     depthBarrier.subresourceRange.layerCount = 1;
     depthBarrier.srcAccessMask = 0;
-    depthBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+    depthBarrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-    vkCmdPipelineBarrier(commandBuffer, 
-        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 
-        VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-        0, 0, nullptr, 0, nullptr, 1, &depthBarrier);
+    vkCmdPipelineBarrier(commandBuffer,
+                         VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                         VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                         0, 0, nullptr, 0, nullptr, 1, &depthBarrier);
 
     VkRenderingAttachmentInfo colorAttachmentInfo{};
     colorAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -607,7 +640,7 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     colorAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
     colorAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     colorAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    colorAttachmentInfo.clearValue.color = { {0.0f, 0.0f, 0.0f, 1.0f} };
+    colorAttachmentInfo.clearValue.color = {{0.0f, 0.0f, 0.0f, 1.0f}};
 
     VkRenderingAttachmentInfo depthAttachmentInfo{};
     depthAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -630,24 +663,6 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
 
     m_graphicsPipeline->bind(commandBuffer);
 
-    VkBuffer vertexBuffers[] = {m_vertexBuffer->getBuffer()};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT16);
-
-    static auto startTime = std::chrono::high_resolution_clock::now();
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    float time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-    glm::mat4 model = glm::rotate(glm::mat4(1.0f), time * glm::radians(90.0f), glm::vec3(0.5f, 1.0f, 0.0f));
-    glm::mat4 view = glm::lookAt(glm::vec3(2.0f, 2.0f, 2.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f));
-    glm::mat4 proj = glm::perspective(glm::radians(45.0f), m_swapchainExtent.width / (float)m_swapchainExtent.height, 0.1f, 10.0f);
-    proj[1][1] *= -1;
-
-    glm::mat4 mvp = proj * view * model;
-
-    vkCmdPushConstants(commandBuffer, m_graphicsPipeline->getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &mvp);
-
     VkViewport viewport{};
     viewport.x = 0.0f;
     viewport.y = 0.0f;
@@ -658,11 +673,41 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
     VkRect2D scissor{};
-    scissor.offset = {.x = 0, .y = 0};
+    scissor.offset = {0, 0};
     scissor.extent = m_swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(VoxelMesh::indices.size()), 1, 0, 0, 0);
+    glm::mat4 projOriginal = glm::perspective(glm::radians(45.0f), m_swapchainExtent.width / (float)m_swapchainExtent.height,
+                                      0.1f, 100.0f);
+    glm::mat4 proj = projOriginal;
+    proj[1][1] *= -1;
+    
+    glm::mat4 vpOriginal = projOriginal * viewMatrix;
+    Frustum frustum(vpOriginal);
+    
+    glm::mat4 vp = proj * viewMatrix;
+    
+    m_drawnChunksCount = 0;
+
+    for (const auto& chunk : chunks)
+    {
+        glm::vec3 minAABB = (chunk->getPosition() - glm::vec3(0.5f)) * 0.05f;
+        glm::vec3 maxAABB = (chunk->getPosition() + glm::vec3(Chunk::CHUNK_SIZE - 0.5f)) * 0.05f;
+
+        if (!frustum.intersectsAABB(minAABB, maxAABB)) {
+            continue;
+        }
+
+        glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f));
+        glm::mat4 mvp = vp * model;
+        vkCmdPushConstants(commandBuffer, m_graphicsPipeline->getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                           sizeof(glm::mat4), &mvp);
+
+        chunk->draw(commandBuffer);
+        m_drawnChunksCount++;
+    }
+
+    renderImGui(commandBuffer);
 
     vkCmdEndRendering(commandBuffer);
 
@@ -680,23 +725,46 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     }
 }
 
-void VulkanContext::createVertexAndIndexBuffers()
+void VulkanContext::initImGui(GLFWwindow* window)
 {
-    VkDeviceSize vertexBufferSize = sizeof(VoxelMesh::vertices[0]) * VoxelMesh::vertices.size();
-    m_vertexBuffer = std::make_unique<Buffer>(
-        m_device, m_physicalDevice, vertexBufferSize, 
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-    );
-    m_vertexBuffer->copyData(VoxelMesh::vertices.data(), vertexBufferSize);
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGui::StyleColorsDark();
 
-    VkDeviceSize indexBufferSize = sizeof(VoxelMesh::indices[0]) * VoxelMesh::indices.size();
-    m_indexBuffer = std::make_unique<Buffer>(
-        m_device, m_physicalDevice, indexBufferSize, 
-        VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-    );
-    m_indexBuffer->copyData(VoxelMesh::indices.data(), indexBufferSize);
+    ImGui_ImplGlfw_InitForVulkan(window, true);
+
+    ImGui_ImplVulkan_InitInfo init_info = {};
+    init_info.Instance = m_instance;
+    init_info.PhysicalDevice = m_physicalDevice;
+    init_info.Device = m_device;
+    init_info.QueueFamily = findQueueFamilies(m_physicalDevice).graphicsFamily.value();
+    init_info.Queue = m_graphicsQueue;
+    init_info.DescriptorPoolSize = 1000;
+    init_info.MinImageCount = MAX_FRAMES_IN_FLIGHT;
+    init_info.ImageCount = MAX_FRAMES_IN_FLIGHT;
+    init_info.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+    init_info.UseDynamicRendering = true;
+    init_info.PipelineInfoMain.PipelineRenderingCreateInfo = {};
+    init_info.PipelineInfoMain.PipelineRenderingCreateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+    init_info.PipelineInfoMain.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
+    init_info.PipelineInfoMain.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_swapchainImageFormat;
+    init_info.PipelineInfoMain.PipelineRenderingCreateInfo.depthAttachmentFormat = m_depthFormat;
+    
+    ImGui_ImplVulkan_Init(&init_info);
+}
+
+void VulkanContext::cleanupImGui()
+{
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+}
+
+void VulkanContext::renderImGui(VkCommandBuffer commandBuffer)
+{
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
 void VulkanContext::createDepthResources()
@@ -715,28 +783,16 @@ void VulkanContext::createDepthResources()
     imageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     imageInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     imageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
-    if (vkCreateImage(m_device, &imageInfo, nullptr, &m_depthImage) != VK_SUCCESS)
+    VmaAllocationCreateInfo allocInfo = {};
+    allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
+
+    if (vmaCreateImage(m_allocator, &imageInfo, &allocInfo, &m_depthImage, &m_depthImageAllocation, nullptr) != VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create depth image!");
     }
-
-    VkMemoryRequirements memRequirements;
-    vkGetImageMemoryRequirements(m_device, m_depthImage, &memRequirements);
-
-    VkMemoryAllocateInfo allocInfo{};
-    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    allocInfo.allocationSize = memRequirements.size;
-    allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
-    if (vkAllocateMemory(m_device, &allocInfo, nullptr, &m_depthImageMemory) != VK_SUCCESS)
-    {
-        throw std::runtime_error("Failed to allocate depth image memory!");
-    }
-
-    vkBindImageMemory(m_device, m_depthImage, m_depthImageMemory, 0);
 
     VkImageViewCreateInfo viewInfo{};
     viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -770,7 +826,8 @@ uint32_t VulkanContext::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlag
     throw std::runtime_error("Failed to find suitable memory type!");
 }
 
-VkFormat VulkanContext::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling, VkFormatFeatureFlags features) const
+VkFormat VulkanContext::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
+                                            VkFormatFeatureFlags features) const
 {
     for (VkFormat format : candidates)
     {

@@ -3,11 +3,13 @@
 #include <vulkan/vulkan.h>
 #include <vector>
 
-struct Vertex {
+struct Vertex
+{
     glm::vec3 pos;
     glm::vec3 color;
 
-    static VkVertexInputBindingDescription getBindingDescription() {
+    static VkVertexInputBindingDescription getBindingDescription()
+    {
         VkVertexInputBindingDescription bindingDescription{};
         bindingDescription.binding = 0;
         bindingDescription.stride = sizeof(Vertex);
@@ -15,7 +17,8 @@ struct Vertex {
         return bindingDescription;
     }
 
-    static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions() {
+    static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions()
+    {
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions(2);
 
         attributeDescriptions[0].binding = 0;

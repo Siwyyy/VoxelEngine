@@ -6,10 +6,20 @@ set(CMAKE_CXX_STANDARD 20)
 find_package(Vulkan REQUIRED)
 
 set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glfw)
+set(IMGUI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/imgui)
+set(VMA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/vma)
 
 file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
+file(GLOB IMGUI_SOURCES 
+    "${IMGUI_DIR}/imgui.cpp"
+    "${IMGUI_DIR}/imgui_draw.cpp"
+    "${IMGUI_DIR}/imgui_tables.cpp"
+    "${IMGUI_DIR}/imgui_widgets.cpp"
+    "${IMGUI_DIR}/backends/imgui_impl_glfw.cpp"
+    "${IMGUI_DIR}/backends/imgui_impl_vulkan.cpp"
+)
 
-add_executable(${PROJECT_NAME} ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES} ${IMGUI_SOURCES})
 
 include(FetchContent)
 set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
@@ -23,6 +33,9 @@ FetchContent_MakeAvailable(glm)
 target_include_directories(${PROJECT_NAME} PRIVATE 
     ${Vulkan_INCLUDE_DIRS}
     ${GLFW_DIR}/include
+    ${IMGUI_DIR}
+    ${IMGUI_DIR}/backends
+    ${VMA_DIR}/include
     ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 

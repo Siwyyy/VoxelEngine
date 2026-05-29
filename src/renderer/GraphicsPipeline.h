@@ -6,7 +6,8 @@ class Shader;
 class GraphicsPipeline
 {
 public:
-    GraphicsPipeline(VkDevice device, VkFormat swapchainImageFormat, VkFormat depthFormat, const Shader& vertShader, const Shader& fragShader);
+    GraphicsPipeline(VkDevice device, VkFormat swapchainImageFormat, VkFormat depthFormat, const Shader& vertShader,
+                     const Shader& fragShader);
     ~GraphicsPipeline();
 
     // Blokujemy kopiowanie
