@@ -6,6 +6,7 @@ class GLFWInput final : public Input
 {
 public:
     GLFWInput(GLFWwindow* window);
+
 private:
     bool isKeyPressedImpl(int32_t keycode_) const override;
     bool isMouseButtonPressedImpl(int32_t button_) const override;

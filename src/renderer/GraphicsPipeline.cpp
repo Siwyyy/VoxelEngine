@@ -4,7 +4,8 @@
 #include <stdexcept>
 #include <vector>
 
-GraphicsPipeline::GraphicsPipeline(VkDevice device, VkFormat swapchainImageFormat, VkFormat depthFormat, const Shader& vertShader, const Shader& fragShader)
+GraphicsPipeline::GraphicsPipeline(VkDevice device, VkFormat swapchainImageFormat, VkFormat depthFormat,
+                                   const Shader& vertShader, const Shader& fragShader)
     : m_device(device)
 {
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
