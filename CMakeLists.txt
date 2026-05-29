@@ -11,6 +11,15 @@ file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
 
+include(FetchContent)
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
+FetchContent_Declare(
+  glm
+  GIT_REPOSITORY https://github.com/g-truc/glm.git
+  GIT_TAG        0.9.9.8
+)
+FetchContent_MakeAvailable(glm)
+
 target_include_directories(${PROJECT_NAME} PRIVATE 
     ${Vulkan_INCLUDE_DIRS}
     ${GLFW_DIR}/include
@@ -20,4 +29,35 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 target_link_libraries(${PROJECT_NAME} PRIVATE 
     Vulkan::Vulkan
     ${GLFW_DIR}/lib/glfw3.lib
+    glm::glm
+)
+
+find_program(GLSLC_EXECUTABLE NAMES glslc HINTS $ENV{VULKAN_SDK}/Bin)
+if(NOT GLSLC_EXECUTABLE)
+    message(FATAL_ERROR "glslc not found! Please check Vulkan SDK installation.")
+endif()
+
+file(GLOB_RECURSE SHADERS "shaders/*.vert" "shaders/*.frag")
+set(SPV_FILES "")
+
+foreach(SHADER ${SHADERS})
+    get_filename_component(FILE_NAME ${SHADER} NAME)
+    set(SPV_FILE "${CMAKE_CURRENT_BINARY_DIR}/shaders/${FILE_NAME}.spv")
+    
+    add_custom_command(
+        OUTPUT ${SPV_FILE}
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/shaders"
+        COMMAND ${GLSLC_EXECUTABLE} ${SHADER} -o ${SPV_FILE}
+        DEPENDS ${SHADER}
+    )
+    list(APPEND SPV_FILES ${SPV_FILE})
+endforeach()
+
+add_custom_target(CompileShaders DEPENDS ${SPV_FILES})
+add_dependencies(${PROJECT_NAME} CompileShaders)
+
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_BINARY_DIR}/shaders"
+    "$<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders"
 )

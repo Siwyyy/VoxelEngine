@@ -1,38 +1,35 @@
 #include "Engine.h"
 
+VoxelEngine::VoxelEngine()
+{
+    m_window = std::make_unique<Window>(m_width, m_height, "Voxel Engine");
+}
+
+VoxelEngine::~VoxelEngine() = default;
+
 void VoxelEngine::run()
 {
-    initWindow();
     initVulkan();
     mainLoop();
     cleanup();
 }
 
-void VoxelEngine::initWindow()
-{
-    glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-
-    m_window = glfwCreateWindow(static_cast<int>(m_width), static_cast<int>(m_height), "Voxel Engine", nullptr, nullptr);
-}
-
 void VoxelEngine::initVulkan()
 {
-    m_vulkanContext.init();
+    m_vulkanContext.init(m_window->getGLFWwindow());
 }
 
 void VoxelEngine::mainLoop()
 {
-    while (!glfwWindowShouldClose(m_window))
+    while (!m_window->shouldClose())
     {
-        glfwPollEvents();
+        m_window->pollEvents();
+        m_vulkanContext.drawFrame();
     }
 }
 
 void VoxelEngine::cleanup()
 {
+    m_vulkanContext.deviceWaitIdle();
     m_vulkanContext.cleanup();
-    glfwDestroyWindow(m_window);
-    glfwTerminate();
 }
