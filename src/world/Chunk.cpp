@@ -48,10 +48,12 @@ Chunk::Chunk(glm::vec3 position, MegaBuffer* vb, MegaBuffer* ib)
 
 Chunk::~Chunk()
 {
-    if (m_vertexAllocation.valid) {
+    if (m_vertexAllocation.valid)
+    {
         m_megaVertexBuffer->free(m_vertexAllocation);
     }
-    if (m_indexAllocation.valid) {
+    if (m_indexAllocation.valid)
+    {
         m_megaIndexBuffer->free(m_indexAllocation);
     }
 }
@@ -68,11 +70,11 @@ void Chunk::generateTerrain()
 
             float noiseValue = m_noise.GetNoise(globalX, globalZ);
             int terrainHeight = static_cast<int>((noiseValue + 1.0f) * 0.5f * 60.0f) + 15;
-            
+
             for (int y = 0; y < CHUNK_SIZE; ++y)
             {
                 float globalY = m_position.y + y;
-                
+
                 if (globalY == terrainHeight - 1)
                 {
                     m_blocks[x][y][z] = BlockType::Grass;
@@ -102,37 +104,49 @@ void Chunk::generateTerrain()
     int chunkZ = static_cast<int>(std::floor(m_position.z / CHUNK_SIZE));
     int hash = std::abs(chunkX * 73856093 ^ chunkZ * 19349663);
 
-    if (hash % 4 == 0) 
+    if (hash % 4 == 0)
     {
         int tx = 32;
         int tz = 32;
-        
+
         // Find surface globally for this x,z
         float noiseValue = m_noise.GetNoise(m_position.x + tx, m_position.z + tz);
         int terrainHeight = static_cast<int>((noiseValue + 1.0f) * 0.5f * 60.0f) + 15;
-        
+
         // Check if tree trunk should exist in this vertical chunk
         int treeHeight = 20 + (hash % 15);
         int leavesRadius = 8;
-        
-        for(int gy = terrainHeight; gy <= terrainHeight + treeHeight + leavesRadius; gy++) {
-            if (gy >= m_position.y && gy < m_position.y + CHUNK_SIZE) {
+
+        for (int gy = terrainHeight; gy <= terrainHeight + treeHeight + leavesRadius; gy++)
+        {
+            if (gy >= m_position.y && gy < m_position.y + CHUNK_SIZE)
+            {
                 int ly = gy - static_cast<int>(m_position.y);
-                
-                if (gy < terrainHeight + treeHeight) {
+
+                if (gy < terrainHeight + treeHeight)
+                {
                     // Trunk
                     m_blocks[tx][ly][tz] = BlockType::Wood;
-                } else {
+                }
+                else
+                {
                     // Leaves
-                    for (int dx = -leavesRadius; dx <= leavesRadius; ++dx) {
-                        for (int dy = -leavesRadius; dy <= leavesRadius; ++dy) {
-                            for (int dz = -leavesRadius; dz <= leavesRadius; ++dz) {
-                                if (dx*dx + dy*dy + dz*dz <= leavesRadius*leavesRadius) {
+                    for (int dx = -leavesRadius; dx <= leavesRadius; ++dx)
+                    {
+                        for (int dy = -leavesRadius; dy <= leavesRadius; ++dy)
+                        {
+                            for (int dz = -leavesRadius; dz <= leavesRadius; ++dz)
+                            {
+                                if (dx * dx + dy * dy + dz * dz <= leavesRadius * leavesRadius)
+                                {
                                     int lx = tx + dx;
                                     int lz = tz + dz;
                                     int check_ly = ly + dy;
-                                    if (lx >= 0 && lx < CHUNK_SIZE && check_ly >= 0 && check_ly < CHUNK_SIZE && lz >= 0 && lz < CHUNK_SIZE) {
-                                        if (m_blocks[lx][check_ly][lz] == BlockType::Air) {
+                                    if (lx >= 0 && lx < CHUNK_SIZE && check_ly >= 0 && check_ly < CHUNK_SIZE && lz >= 0
+                                        && lz < CHUNK_SIZE)
+                                    {
+                                        if (m_blocks[lx][check_ly][lz] == BlockType::Air)
+                                        {
                                             m_blocks[lx][check_ly][lz] = BlockType::Leaves;
                                         }
                                     }
@@ -147,6 +161,7 @@ void Chunk::generateTerrain()
 
     m_isDirty = true;
 }
+
 void Chunk::setBlock(int x, int y, int z, BlockType type)
 {
     if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE)
@@ -162,16 +177,16 @@ BlockType Chunk::getBlock(int x, int y, int z) const
     {
         return m_blocks[x][y][z];
     }
-    
+
     float globalX = m_position.x + x;
     float globalY = m_position.y + y;
     float globalZ = m_position.z + z;
-    
-    if (globalY < 0) return BlockType::Stone; 
-    
+
+    if (globalY < 0) return BlockType::Stone;
+
     float noiseValue = m_noise.GetNoise(globalX, globalZ);
     int terrainHeight = static_cast<int>((noiseValue + 1.0f) * 0.5f * 60.0f) + 15;
-    
+
     if (globalY >= terrainHeight) return BlockType::Air;
     if (globalY == terrainHeight - 1) return BlockType::Grass;
     if (globalY >= terrainHeight - 4) return BlockType::Dirt;
@@ -235,19 +250,24 @@ void Chunk::buildMesh()
         int x[3] = {0, 0, 0};
         int q[3] = {0, 0, 0};
         q[d] = 1;
-        
+
         int dims[3] = {CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE};
         int dim_d = dims[d];
         int dim_u = dims[u];
         int dim_v = dims[v];
 
-        struct MaskCell {
+        struct MaskCell
+        {
             BlockType type;
             bool backFace;
-            bool operator==(const MaskCell& other) const {
+
+            bool operator==(const MaskCell& other) const
+            {
                 return type == other.type && backFace == other.backFace;
             }
-            bool operator!=(const MaskCell& other) const {
+
+            bool operator!=(const MaskCell& other) const
+            {
                 return !(*this == other);
             }
         };
@@ -282,12 +302,14 @@ void Chunk::buildMesh()
             // Generate Mesh from Mask
             for (j = 0; j < dim_v; ++j)
             {
-                for (i = 0; i < dim_u; )
+                for (i = 0; i < dim_u;)
                 {
                     MaskCell c = mask[j][i];
                     if (c.type != BlockType::Air)
                     {
-                        for (w = 1; i + w < dim_u && mask[j][i + w] == c; ++w) {}
+                        for (w = 1; i + w < dim_u && mask[j][i + w] == c; ++w)
+                        {
+                        }
 
                         bool done = false;
                         for (h = 1; j + h < dim_v; ++h)
@@ -306,13 +328,19 @@ void Chunk::buildMesh()
                         x[u] = i;
                         x[v] = j;
 
-                        int du[3] = {0, 0, 0}; du[u] = w;
-                        int dv[3] = {0, 0, 0}; dv[v] = h;
+                        int du[3] = {0, 0, 0};
+                        du[u] = w;
+                        int dv[3] = {0, 0, 0};
+                        dv[v] = h;
 
-                        glm::vec3 v1(x[0], x[1], x[2]); v1[d] += 1.0f;
-                        glm::vec3 v2(x[0] + du[0], x[1] + du[1], x[2] + du[2]); v2[d] += 1.0f;
-                        glm::vec3 v3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]); v3[d] += 1.0f;
-                        glm::vec3 v4(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]); v4[d] += 1.0f;
+                        glm::vec3 v1(x[0], x[1], x[2]);
+                        v1[d] += 1.0f;
+                        glm::vec3 v2(x[0] + du[0], x[1] + du[1], x[2] + du[2]);
+                        v2[d] += 1.0f;
+                        glm::vec3 v3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
+                        v3[d] += 1.0f;
+                        glm::vec3 v4(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
+                        v4[d] += 1.0f;
 
                         glm::vec3 offset = m_position - glm::vec3(0.5f);
                         v1 += offset;
@@ -328,12 +356,18 @@ void Chunk::buildMesh()
                         glm::vec3 color;
                         switch (c.type)
                         {
-                        case BlockType::Grass: color = {0.2f, 0.8f, 0.2f}; break;
-                        case BlockType::Dirt: color = {0.5f, 0.3f, 0.1f}; break;
-                        case BlockType::Stone: color = {0.5f, 0.5f, 0.5f}; break;
-                        case BlockType::Wood: color = {0.4f, 0.2f, 0.0f}; break;
-                        case BlockType::Leaves: color = {0.1f, 0.6f, 0.1f}; break;
-                        default: color = {1.0f, 1.0f, 1.0f}; break;
+                        case BlockType::Grass: color = {0.2f, 0.8f, 0.2f};
+                            break;
+                        case BlockType::Dirt: color = {0.5f, 0.3f, 0.1f};
+                            break;
+                        case BlockType::Stone: color = {0.5f, 0.5f, 0.5f};
+                            break;
+                        case BlockType::Wood: color = {0.4f, 0.2f, 0.0f};
+                            break;
+                        case BlockType::Leaves: color = {0.1f, 0.6f, 0.1f};
+                            break;
+                        default: color = {1.0f, 1.0f, 1.0f};
+                            break;
                         }
 
                         if (faceIndex == 0 || faceIndex == 1) color *= 0.8f;
@@ -342,15 +376,24 @@ void Chunk::buildMesh()
 
                         uint32_t startIndex = static_cast<uint32_t>(vertices.size());
                         Vertex vert1, vert2, vert3, vert4;
-                        vert1.color = color; vert2.color = color; vert3.color = color; vert4.color = color;
+                        vert1.color = color;
+                        vert2.color = color;
+                        vert3.color = color;
+                        vert4.color = color;
 
                         if (!c.backFace)
                         {
-                            vert1.pos = v1; vert2.pos = v2; vert3.pos = v3; vert4.pos = v4;
+                            vert1.pos = v1;
+                            vert2.pos = v2;
+                            vert3.pos = v3;
+                            vert4.pos = v4;
                         }
                         else
                         {
-                            vert1.pos = v1; vert2.pos = v4; vert3.pos = v3; vert4.pos = v2;
+                            vert1.pos = v1;
+                            vert2.pos = v4;
+                            vert3.pos = v3;
+                            vert4.pos = v2;
                         }
 
                         vertices.push_back(vert1);
@@ -390,13 +433,15 @@ void Chunk::buildMesh()
     {
         uint32_t vertexSize = sizeof(Vertex) * vertices.size();
         m_vertexAllocation = m_megaVertexBuffer->allocate(vertexSize);
-        if (m_vertexAllocation.valid) {
+        if (m_vertexAllocation.valid)
+        {
             m_megaVertexBuffer->upload(m_vertexAllocation, vertices.data());
         }
 
         uint32_t indexSize = sizeof(indices[0]) * indices.size();
         m_indexAllocation = m_megaIndexBuffer->allocate(indexSize);
-        if (m_indexAllocation.valid) {
+        if (m_indexAllocation.valid)
+        {
             m_megaIndexBuffer->upload(m_indexAllocation, indices.data());
         }
     }
@@ -405,19 +450,25 @@ void Chunk::buildMesh()
 bool Chunk::save(const std::string& filepath)
 {
     if (!m_isDirty) return true;
-    
+
     std::ofstream out(filepath, std::ios::binary);
     if (!out) return false;
-    
+
     BlockType currentType = m_blocks[0][0][0];
     uint32_t count = 0;
-    
-    for (int x = 0; x < CHUNK_SIZE; ++x) {
-        for (int y = 0; y < CHUNK_SIZE; ++y) {
-            for (int z = 0; z < CHUNK_SIZE; ++z) {
-                if (m_blocks[x][y][z] == currentType) {
+
+    for (int x = 0; x < CHUNK_SIZE; ++x)
+    {
+        for (int y = 0; y < CHUNK_SIZE; ++y)
+        {
+            for (int z = 0; z < CHUNK_SIZE; ++z)
+            {
+                if (m_blocks[x][y][z] == currentType)
+                {
                     count++;
-                } else {
+                }
+                else
+                {
                     out.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
                     out.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
                     currentType = m_blocks[x][y][z];
@@ -428,7 +479,7 @@ bool Chunk::save(const std::string& filepath)
     }
     out.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
     out.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
-    
+
     m_isDirty = false;
     return true;
 }
@@ -437,22 +488,26 @@ bool Chunk::load(const std::string& filepath)
 {
     std::ifstream in(filepath, std::ios::binary);
     if (!in) return false;
-    
+
     int x = 0, y = 0, z = 0;
-    while (in && x < CHUNK_SIZE) {
+    while (in && x < CHUNK_SIZE)
+    {
         BlockType type;
         uint32_t count;
         in.read(reinterpret_cast<char*>(&type), sizeof(BlockType));
         if (in.eof()) break;
         in.read(reinterpret_cast<char*>(&count), sizeof(uint32_t));
-        
-        for (uint32_t i = 0; i < count; ++i) {
+
+        for (uint32_t i = 0; i < count; ++i)
+        {
             m_blocks[x][y][z] = type;
             z++;
-            if (z >= CHUNK_SIZE) {
+            if (z >= CHUNK_SIZE)
+            {
                 z = 0;
                 y++;
-                if (y >= CHUNK_SIZE) {
+                if (y >= CHUNK_SIZE)
+                {
                     y = 0;
                     x++;
                     if (x >= CHUNK_SIZE) break;

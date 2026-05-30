@@ -17,33 +17,42 @@ MegaBuffer::MegaBuffer(VkDevice device, VmaAllocator allocator, VkDeviceSize cap
     allocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
     VmaAllocationInfo vmaAllocInfo;
-    if (vmaCreateBuffer(m_allocator, &bufferInfo, &allocInfo, &m_buffer, &m_allocation, &vmaAllocInfo) != VK_SUCCESS) {
+    if (vmaCreateBuffer(m_allocator, &bufferInfo, &allocInfo, &m_buffer, &m_allocation, &vmaAllocInfo) != VK_SUCCESS)
+    {
         throw std::runtime_error("failed to create MegaBuffer!");
     }
-    
+
     m_mappedData = vmaAllocInfo.pMappedData;
     m_freeBlocks.push_back({0, static_cast<uint32_t>(capacity)});
 }
 
-MegaBuffer::~MegaBuffer() {
-    if (m_buffer != VK_NULL_HANDLE) {
+MegaBuffer::~MegaBuffer()
+{
+    if (m_buffer != VK_NULL_HANDLE)
+    {
         vmaDestroyBuffer(m_allocator, m_buffer, m_allocation);
     }
 }
 
-BlockAllocation MegaBuffer::allocate(uint32_t size) {
+BlockAllocation MegaBuffer::allocate(uint32_t size)
+{
     if (size == 0) return {0, 0, false};
     std::lock_guard<std::mutex> lock(m_mutex);
-    for (auto it = m_freeBlocks.begin(); it != m_freeBlocks.end(); ++it) {
-        if (it->size >= size) {
+    for (auto it = m_freeBlocks.begin(); it != m_freeBlocks.end(); ++it)
+    {
+        if (it->size >= size)
+        {
             BlockAllocation alloc;
             alloc.offset = it->offset;
             alloc.size = size;
             alloc.valid = true;
-            
-            if (it->size == size) {
+
+            if (it->size == size)
+            {
                 m_freeBlocks.erase(it);
-            } else {
+            }
+            else
+            {
                 it->offset += size;
                 it->size -= size;
             }
@@ -53,27 +62,34 @@ BlockAllocation MegaBuffer::allocate(uint32_t size) {
     return {0, 0, false}; // Out of memory
 }
 
-void MegaBuffer::free(const BlockAllocation& block) {
+void MegaBuffer::free(const BlockAllocation& block)
+{
     if (!block.valid) return;
     std::lock_guard<std::mutex> lock(m_mutex);
-    
+
     m_freeBlocks.push_back({block.offset, block.size});
-    m_freeBlocks.sort([](const FreeBlock& a, const FreeBlock& b) {
+    m_freeBlocks.sort([](const FreeBlock& a, const FreeBlock& b)
+    {
         return a.offset < b.offset;
     });
-    
-    for (auto it = m_freeBlocks.begin(); it != m_freeBlocks.end(); ) {
+
+    for (auto it = m_freeBlocks.begin(); it != m_freeBlocks.end();)
+    {
         auto next = std::next(it);
-        if (next != m_freeBlocks.end() && it->offset + it->size == next->offset) {
+        if (next != m_freeBlocks.end() && it->offset + it->size == next->offset)
+        {
             it->size += next->size;
             m_freeBlocks.erase(next);
-        } else {
+        }
+        else
+        {
             ++it;
         }
     }
 }
 
-void MegaBuffer::upload(const BlockAllocation& block, const void* data) {
+void MegaBuffer::upload(const BlockAllocation& block, const void* data)
+{
     if (!block.valid || !data) return;
     std::memcpy(static_cast<char*>(m_mappedData) + block.offset, data, block.size);
 }

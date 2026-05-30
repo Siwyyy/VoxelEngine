@@ -65,11 +65,13 @@ void VulkanContext::init(GLFWwindow* window)
     createCommandBuffers();
     createSyncObjects();
     createQueryPool();
-    
+
     VkDeviceSize vertexMegaSize = 512 * 1024 * 1024; // 512 MB
-    VkDeviceSize indexMegaSize = 256 * 1024 * 1024;  // 256 MB
-    m_megaVertexBuffer = std::make_unique<MegaBuffer>(m_device, m_allocator, vertexMegaSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    m_megaIndexBuffer = std::make_unique<MegaBuffer>(m_device, m_allocator, indexMegaSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+    VkDeviceSize indexMegaSize = 256 * 1024 * 1024; // 256 MB
+    m_megaVertexBuffer = std::make_unique<MegaBuffer>(m_device, m_allocator, vertexMegaSize,
+                                                      VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    m_megaIndexBuffer = std::make_unique<MegaBuffer>(m_device, m_allocator, indexMegaSize,
+                                                     VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
     VkBufferCreateInfo indirectInfo{};
     indirectInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -82,7 +84,8 @@ void VulkanContext::init(GLFWwindow* window)
     indirectAllocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
     VmaAllocationInfo allocInfo;
-    vmaCreateBuffer(m_allocator, &indirectInfo, &indirectAllocInfo, &m_indirectBuffer, &m_indirectBufferAllocation, &allocInfo);
+    vmaCreateBuffer(m_allocator, &indirectInfo, &indirectAllocInfo, &m_indirectBuffer, &m_indirectBufferAllocation,
+                    &allocInfo);
     m_indirectMappedData = allocInfo.pMappedData;
 
     initImGui(window);
@@ -113,20 +116,23 @@ void VulkanContext::cleanup()
     }
 
     vkDestroyCommandPool(m_device, m_commandPool, nullptr);
-    
-    if (m_queryPool != VK_NULL_HANDLE) {
+
+    if (m_queryPool != VK_NULL_HANDLE)
+    {
         vkDestroyQueryPool(m_device, m_queryPool, nullptr);
     }
-    
+
     m_megaVertexBuffer.reset();
     m_megaIndexBuffer.reset();
-    if (m_indirectBuffer != VK_NULL_HANDLE) {
+    if (m_indirectBuffer != VK_NULL_HANDLE)
+    {
         vmaDestroyBuffer(m_allocator, m_indirectBuffer, m_indirectBufferAllocation);
     }
 
     m_graphicsPipeline.reset();
 
-    if (m_depthImage != VK_NULL_HANDLE) {
+    if (m_depthImage != VK_NULL_HANDLE)
+    {
         vmaDestroyImage(m_allocator, m_depthImage, m_depthImageAllocation);
         vkDestroyImageView(m_device, m_depthImageView, nullptr);
     }
@@ -332,13 +338,14 @@ void VulkanContext::createLogicalDevice()
 
     vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
     vkGetDeviceQueue(m_device, indices.presentFamily.value(), 0, &m_presentQueue);
-    
+
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.physicalDevice = m_physicalDevice;
     allocatorInfo.device = m_device;
     allocatorInfo.instance = m_instance;
     allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_3;
-    if (vmaCreateAllocator(&allocatorInfo, &m_allocator) != VK_SUCCESS) {
+    if (vmaCreateAllocator(&allocatorInfo, &m_allocator) != VK_SUCCESS)
+    {
         throw std::runtime_error("Failed to create VMA allocator!");
     }
 }
@@ -574,11 +581,12 @@ void VulkanContext::createQueryPool()
     queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
     queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
     queryPoolInfo.queryCount = 2 * 2; // MAX_FRAMES_IN_FLIGHT * 2
-    
-    if (vkCreateQueryPool(m_device, &queryPoolInfo, nullptr, &m_queryPool) != VK_SUCCESS) {
+
+    if (vkCreateQueryPool(m_device, &queryPoolInfo, nullptr, &m_queryPool) != VK_SUCCESS)
+    {
         throw std::runtime_error("failed to create query pool!");
     }
-    
+
     VkPhysicalDeviceProperties deviceProperties;
     vkGetPhysicalDeviceProperties(m_physicalDevice, &deviceProperties);
     m_timestampPeriod = deviceProperties.limits.timestampPeriod;
@@ -587,15 +595,18 @@ void VulkanContext::createQueryPool()
 void VulkanContext::drawFrame(const glm::mat4& viewMatrix, const std::vector<Chunk*>& chunks)
 {
     vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
-    
-    if (!m_firstFrame[m_currentFrame]) {
+
+    if (!m_firstFrame[m_currentFrame])
+    {
         uint64_t timestamps[2];
-        if (vkGetQueryPoolResults(m_device, m_queryPool, m_currentFrame * 2, 2, sizeof(timestamps), timestamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT) == VK_SUCCESS) {
+        if (vkGetQueryPoolResults(m_device, m_queryPool, m_currentFrame * 2, 2, sizeof(timestamps), timestamps,
+                                  sizeof(uint64_t), VK_QUERY_RESULT_64_BIT) == VK_SUCCESS)
+        {
             m_gpuFrameTime = (timestamps[1] - timestamps[0]) * m_timestampPeriod * 1e-6f;
         }
     }
     m_firstFrame[m_currentFrame] = false;
-    
+
     vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
 
     uint32_t imageIndex;
@@ -653,7 +664,7 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     {
         throw std::runtime_error("Failed to begin recording command buffer!");
     }
-    
+
     vkCmdResetQueryPool(commandBuffer, m_queryPool, m_currentFrame * 2, 2);
     vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_queryPool, m_currentFrame * 2);
 
@@ -737,18 +748,19 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     scissor.extent = m_swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-    glm::mat4 projOriginal = glm::perspective(glm::radians(45.0f), m_swapchainExtent.width / (float)m_swapchainExtent.height,
-                                      0.1f, 100.0f);
+    glm::mat4 projOriginal = glm::perspective(glm::radians(45.0f),
+                                              m_swapchainExtent.width / (float)m_swapchainExtent.height,
+                                              0.1f, 100.0f);
     glm::mat4 proj = projOriginal;
     proj[1][1] *= -1;
-    
+
     glm::mat4 vpOriginal = projOriginal * viewMatrix;
     Frustum frustum(vpOriginal);
-    
+
     glm::mat4 vp = proj * viewMatrix;
     glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f));
     glm::mat4 mvp = vp * model;
-    
+
     vkCmdPushConstants(commandBuffer, m_graphicsPipeline->getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(glm::mat4), &mvp);
 
@@ -765,10 +777,11 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
         glm::vec3 minAABB = (chunk->getPosition() - glm::vec3(0.5f)) * 0.05f;
         glm::vec3 maxAABB = (chunk->getPosition() + glm::vec3(Chunk::CHUNK_SIZE - 0.5f)) * 0.05f;
 
-        if (!frustum.intersectsAABB(minAABB, maxAABB)) {
+        if (!frustum.intersectsAABB(minAABB, maxAABB))
+        {
             continue;
         }
-        
+
         if (chunk->getIndexCount() == 0 || !chunk->hasValidAllocation()) continue;
 
         VkDrawIndexedIndirectCommand cmd{};
@@ -777,20 +790,23 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
         cmd.firstIndex = chunk->getIndexOffset() / sizeof(uint32_t);
         cmd.vertexOffset = chunk->getVertexOffset() / sizeof(Vertex);
         cmd.firstInstance = 0;
-        
+
         indirectCommands.push_back(cmd);
         m_drawnChunksCount++;
     }
-    
-    if (!indirectCommands.empty()) {
-        std::memcpy(m_indirectMappedData, indirectCommands.data(), indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand));
-        vkCmdDrawIndexedIndirect(commandBuffer, m_indirectBuffer, 0, indirectCommands.size(), sizeof(VkDrawIndexedIndirectCommand));
+
+    if (!indirectCommands.empty())
+    {
+        std::memcpy(m_indirectMappedData, indirectCommands.data(),
+                    indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand));
+        vkCmdDrawIndexedIndirect(commandBuffer, m_indirectBuffer, 0, indirectCommands.size(),
+                                 sizeof(VkDrawIndexedIndirectCommand));
     }
 
     renderImGui(commandBuffer);
 
     vkCmdEndRendering(commandBuffer);
-    
+
     vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, m_currentFrame * 2 + 1);
 
     imageMemoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
@@ -811,7 +827,8 @@ void VulkanContext::initImGui(GLFWwindow* window)
 {
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
+    (void)io;
     ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForVulkan(window, true);
@@ -833,7 +850,7 @@ void VulkanContext::initImGui(GLFWwindow* window)
     init_info.PipelineInfoMain.PipelineRenderingCreateInfo.colorAttachmentCount = 1;
     init_info.PipelineInfoMain.PipelineRenderingCreateInfo.pColorAttachmentFormats = &m_swapchainImageFormat;
     init_info.PipelineInfoMain.PipelineRenderingCreateInfo.depthAttachmentFormat = m_depthFormat;
-    
+
     ImGui_ImplVulkan_Init(&init_info);
 }
 
@@ -871,7 +888,8 @@ void VulkanContext::createDepthResources()
     VmaAllocationCreateInfo allocInfo = {};
     allocInfo.usage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-    if (vmaCreateImage(m_allocator, &imageInfo, &allocInfo, &m_depthImage, &m_depthImageAllocation, nullptr) != VK_SUCCESS)
+    if (vmaCreateImage(m_allocator, &imageInfo, &allocInfo, &m_depthImage, &m_depthImageAllocation, nullptr) !=
+        VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create depth image!");
     }

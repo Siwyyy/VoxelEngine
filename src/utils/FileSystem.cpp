@@ -13,14 +13,13 @@ std::filesystem::path FileSystem::getExecutableDir()
     GetModuleFileNameW(nullptr, path, MAX_PATH);
     return std::filesystem::path(path).parent_path();
 #else
-    // Fallback dla systemów Unix (Linux)
+    // Fallback dla Unix (Linux)
     return std::filesystem::canonical("/proc/self/exe").parent_path();
 #endif
 }
 
 std::vector<char> FileSystem::readFile(const std::string& relativePath)
 {
-    // Budujemy pełną, bezwzględną ścieżkę do pliku zaczynając od lokalizacji .exe
     std::filesystem::path fullPath = getExecutableDir() / relativePath;
 
     std::ifstream file(fullPath, std::ios::ate | std::ios::binary);

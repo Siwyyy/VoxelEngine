@@ -7,17 +7,23 @@
 #include <functional>
 #include <future>
 
-class ThreadPool {
+class ThreadPool
+{
 public:
-    ThreadPool(size_t numThreads) {
-        for (size_t i = 0; i < numThreads; ++i) {
-            m_threads.emplace_back([this] {
-                while (true) {
+    ThreadPool(size_t numThreads)
+    {
+        for (size_t i = 0; i < numThreads; ++i)
+        {
+            m_threads.emplace_back([this]
+            {
+                while (true)
+                {
                     std::function<void()> task;
                     {
                         std::unique_lock<std::mutex> lock(m_mutex);
                         m_cv.wait(lock, [this] { return m_stop || !m_tasks.empty(); });
-                        if (m_stop && m_tasks.empty()) {
+                        if (m_stop && m_tasks.empty())
+                        {
                             return;
                         }
                         task = std::move(m_tasks.front());
@@ -29,19 +35,22 @@ public:
         }
     }
 
-    ~ThreadPool() {
+    ~ThreadPool()
+    {
         {
             std::unique_lock<std::mutex> lock(m_mutex);
             m_stop = true;
         }
         m_cv.notify_all();
-        for (std::thread& thread : m_threads) {
+        for (std::thread& thread : m_threads)
+        {
             thread.join();
         }
     }
 
-    template<class F, class... Args>
-    auto enqueue(F&& f, Args&&... args) -> std::future<typename std::invoke_result<F, Args...>::type> {
+    template <class F, class... Args>
+    auto enqueue(F&& f, Args&&... args) -> std::future<typename std::invoke_result<F, Args...>::type>
+    {
         using return_type = typename std::invoke_result<F, Args...>::type;
         auto task = std::make_shared<std::packaged_task<return_type()>>(
             std::bind(std::forward<F>(f), std::forward<Args>(args)...)
@@ -49,7 +58,8 @@ public:
         std::future<return_type> res = task->get_future();
         {
             std::unique_lock<std::mutex> lock(m_mutex);
-            if (m_stop) {
+            if (m_stop)
+            {
                 throw std::runtime_error("enqueue on stopped ThreadPool");
             }
             m_tasks.emplace([task]() { (*task)(); });
@@ -58,7 +68,8 @@ public:
         return res;
     }
 
-    void clearTasks() {
+    void clearTasks()
+    {
         std::unique_lock<std::mutex> lock(m_mutex);
         std::queue<std::function<void()>> empty;
         std::swap(m_tasks, empty);
