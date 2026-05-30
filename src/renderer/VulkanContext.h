@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <string>
 #include <memory>
+#include "MegaBuffer.h"
 
 class Chunk;
 
@@ -66,6 +67,10 @@ public:
     [[nodiscard]] VmaAllocator getAllocator() const { return m_allocator; }
 
     [[nodiscard]] uint32_t getDrawnChunksCount() const { return m_drawnChunksCount; }
+    [[nodiscard]] float getGpuFrameTime() const { return m_gpuFrameTime; }
+    
+    MegaBuffer* getMegaVertexBuffer() const { return m_megaVertexBuffer.get(); }
+    MegaBuffer* getMegaIndexBuffer() const { return m_megaIndexBuffer.get(); }
 
 private:
     VkInstance m_instance = nullptr;
@@ -97,6 +102,19 @@ private:
     std::vector<VkSemaphore> m_renderFinishedSemaphores;
     std::vector<VkFence> m_inFlightFences;
     uint32_t m_currentFrame = 0;
+
+    VkQueryPool m_queryPool = VK_NULL_HANDLE;
+    float m_timestampPeriod = 1.0f;
+    float m_gpuFrameTime = 0.0f;
+    bool m_firstFrame[2] = {true, true};
+
+    std::unique_ptr<MegaBuffer> m_megaVertexBuffer;
+    std::unique_ptr<MegaBuffer> m_megaIndexBuffer;
+    
+    VkBuffer m_indirectBuffer = VK_NULL_HANDLE;
+    VmaAllocation m_indirectBufferAllocation = VK_NULL_HANDLE;
+    void* m_indirectMappedData = nullptr;
+    uint32_t m_maxIndirectCommands = 30000;
     
     uint32_t m_drawnChunksCount = 0;
 
@@ -111,6 +129,7 @@ private:
     void createCommandPool();
     void createCommandBuffers();
     void createSyncObjects();
+    void createQueryPool();
     void recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex, const glm::mat4& viewMatrix,
                              const std::vector<Chunk*>& chunks);
 
