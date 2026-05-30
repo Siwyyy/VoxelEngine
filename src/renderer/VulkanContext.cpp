@@ -64,6 +64,27 @@ void VulkanContext::init(GLFWwindow* window)
     createCommandPool();
     createCommandBuffers();
     createSyncObjects();
+    createQueryPool();
+    
+    VkDeviceSize vertexMegaSize = 512 * 1024 * 1024; // 512 MB
+    VkDeviceSize indexMegaSize = 256 * 1024 * 1024;  // 256 MB
+    m_megaVertexBuffer = std::make_unique<MegaBuffer>(m_device, m_allocator, vertexMegaSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    m_megaIndexBuffer = std::make_unique<MegaBuffer>(m_device, m_allocator, indexMegaSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+
+    VkBufferCreateInfo indirectInfo{};
+    indirectInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    indirectInfo.size = sizeof(VkDrawIndexedIndirectCommand) * m_maxIndirectCommands;
+    indirectInfo.usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    indirectInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+
+    VmaAllocationCreateInfo indirectAllocInfo{};
+    indirectAllocInfo.usage = VMA_MEMORY_USAGE_CPU_TO_GPU;
+    indirectAllocInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
+
+    VmaAllocationInfo allocInfo;
+    vmaCreateBuffer(m_allocator, &indirectInfo, &indirectAllocInfo, &m_indirectBuffer, &m_indirectBufferAllocation, &allocInfo);
+    m_indirectMappedData = allocInfo.pMappedData;
+
     initImGui(window);
 }
 
@@ -92,6 +113,16 @@ void VulkanContext::cleanup()
     }
 
     vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+    
+    if (m_queryPool != VK_NULL_HANDLE) {
+        vkDestroyQueryPool(m_device, m_queryPool, nullptr);
+    }
+    
+    m_megaVertexBuffer.reset();
+    m_megaIndexBuffer.reset();
+    if (m_indirectBuffer != VK_NULL_HANDLE) {
+        vmaDestroyBuffer(m_allocator, m_indirectBuffer, m_indirectBufferAllocation);
+    }
 
     m_graphicsPipeline.reset();
 
@@ -274,6 +305,7 @@ void VulkanContext::createLogicalDevice()
     }
 
     VkPhysicalDeviceFeatures deviceFeatures{};
+    deviceFeatures.multiDrawIndirect = VK_TRUE;
 
     VkPhysicalDeviceVulkan13Features vulkan13Features{};
     vulkan13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
@@ -536,9 +568,34 @@ void VulkanContext::createSyncObjects()
     }
 }
 
+void VulkanContext::createQueryPool()
+{
+    VkQueryPoolCreateInfo queryPoolInfo{};
+    queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+    queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+    queryPoolInfo.queryCount = 2 * 2; // MAX_FRAMES_IN_FLIGHT * 2
+    
+    if (vkCreateQueryPool(m_device, &queryPoolInfo, nullptr, &m_queryPool) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create query pool!");
+    }
+    
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(m_physicalDevice, &deviceProperties);
+    m_timestampPeriod = deviceProperties.limits.timestampPeriod;
+}
+
 void VulkanContext::drawFrame(const glm::mat4& viewMatrix, const std::vector<Chunk*>& chunks)
 {
     vkWaitForFences(m_device, 1, &m_inFlightFences[m_currentFrame], VK_TRUE, UINT64_MAX);
+    
+    if (!m_firstFrame[m_currentFrame]) {
+        uint64_t timestamps[2];
+        if (vkGetQueryPoolResults(m_device, m_queryPool, m_currentFrame * 2, 2, sizeof(timestamps), timestamps, sizeof(uint64_t), VK_QUERY_RESULT_64_BIT) == VK_SUCCESS) {
+            m_gpuFrameTime = (timestamps[1] - timestamps[0]) * m_timestampPeriod * 1e-6f;
+        }
+    }
+    m_firstFrame[m_currentFrame] = false;
+    
     vkResetFences(m_device, 1, &m_inFlightFences[m_currentFrame]);
 
     uint32_t imageIndex;
@@ -596,6 +653,9 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     {
         throw std::runtime_error("Failed to begin recording command buffer!");
     }
+    
+    vkCmdResetQueryPool(commandBuffer, m_queryPool, m_currentFrame * 2, 2);
+    vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_queryPool, m_currentFrame * 2);
 
     VkImageMemoryBarrier imageMemoryBarrier{};
     imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -686,8 +746,19 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     Frustum frustum(vpOriginal);
     
     glm::mat4 vp = proj * viewMatrix;
+    glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f));
+    glm::mat4 mvp = vp * model;
     
+    vkCmdPushConstants(commandBuffer, m_graphicsPipeline->getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
+                       sizeof(glm::mat4), &mvp);
+
+    VkBuffer vertexBuffers[] = {m_megaVertexBuffer->getBuffer()};
+    VkDeviceSize offsets[] = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    vkCmdBindIndexBuffer(commandBuffer, m_megaIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
     m_drawnChunksCount = 0;
+    std::vector<VkDrawIndexedIndirectCommand> indirectCommands;
 
     for (const auto& chunk : chunks)
     {
@@ -697,19 +768,30 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
         if (!frustum.intersectsAABB(minAABB, maxAABB)) {
             continue;
         }
+        
+        if (chunk->getIndexCount() == 0 || !chunk->hasValidAllocation()) continue;
 
-        glm::mat4 model = glm::scale(glm::mat4(1.0f), glm::vec3(0.05f));
-        glm::mat4 mvp = vp * model;
-        vkCmdPushConstants(commandBuffer, m_graphicsPipeline->getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
-                           sizeof(glm::mat4), &mvp);
-
-        chunk->draw(commandBuffer);
+        VkDrawIndexedIndirectCommand cmd{};
+        cmd.indexCount = chunk->getIndexCount();
+        cmd.instanceCount = 1;
+        cmd.firstIndex = chunk->getIndexOffset() / sizeof(uint32_t);
+        cmd.vertexOffset = chunk->getVertexOffset() / sizeof(Vertex);
+        cmd.firstInstance = 0;
+        
+        indirectCommands.push_back(cmd);
         m_drawnChunksCount++;
+    }
+    
+    if (!indirectCommands.empty()) {
+        std::memcpy(m_indirectMappedData, indirectCommands.data(), indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand));
+        vkCmdDrawIndexedIndirect(commandBuffer, m_indirectBuffer, 0, indirectCommands.size(), sizeof(VkDrawIndexedIndirectCommand));
     }
 
     renderImGui(commandBuffer);
 
     vkCmdEndRendering(commandBuffer);
+    
+    vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_queryPool, m_currentFrame * 2 + 1);
 
     imageMemoryBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
     imageMemoryBarrier.dstAccessMask = 0;

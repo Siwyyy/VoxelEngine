@@ -11,7 +11,12 @@ public:
 
     [[nodiscard]] glm::mat4 getViewMatrix() const;
     [[nodiscard]] glm::vec3 getPosition() const { return m_position; }
-
+    [[nodiscard]] glm::vec3 getFront() const { return m_front; }
+    [[nodiscard]] float getYaw() const { return m_yaw; }
+    [[nodiscard]] float getPitch() const { return m_pitch; }
+    void setPosition(const glm::vec3& pos) { m_position = pos; }
+    void setRotation(float yaw, float pitch) { m_yaw = yaw; m_pitch = pitch; updateCameraVectors(); }
+    void resetMouse() { m_firstMouse = true; }
     void processKeyboard(int key, float deltaTime);
 
 private:

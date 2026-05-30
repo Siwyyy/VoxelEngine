@@ -1,7 +1,8 @@
 #include "Chunk.h"
 #include <array>
 #include <algorithm>
-#include "../utils/FastNoiseLite.h"
+#include <fstream>
+#include "../../vendor/FastNoiseLite.h"
 
 static const glm::vec3 FACE_VERTICES[6][4] = {
     // Front
@@ -27,8 +28,8 @@ static const int FACE_CHECKS[6][3] = {
     {0, -1, 0} // Bottom
 };
 
-Chunk::Chunk(glm::vec3 position, VmaAllocator allocator)
-    : m_position(position), m_allocator(allocator)
+Chunk::Chunk(glm::vec3 position, MegaBuffer* vb, MegaBuffer* ib)
+    : m_position(position), m_megaVertexBuffer(vb), m_megaIndexBuffer(ib)
 {
     m_noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
     m_noise.SetFrequency(0.003f); // Bardzo niska częstotliwość dla długich, łagodnych wzgórz
@@ -47,8 +48,12 @@ Chunk::Chunk(glm::vec3 position, VmaAllocator allocator)
 
 Chunk::~Chunk()
 {
-    m_vertexBuffer.reset();
-    m_indexBuffer.reset();
+    if (m_vertexAllocation.valid) {
+        m_megaVertexBuffer->free(m_vertexAllocation);
+    }
+    if (m_indexAllocation.valid) {
+        m_megaIndexBuffer->free(m_indexAllocation);
+    }
 }
 
 void Chunk::generateTerrain()
@@ -139,12 +144,15 @@ void Chunk::generateTerrain()
             }
         }
     }
+
+    m_isDirty = true;
 }
 void Chunk::setBlock(int x, int y, int z, BlockType type)
 {
     if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE)
     {
         m_blocks[x][y][z] = type;
+        m_isDirty = true;
     }
 }
 
@@ -380,31 +388,78 @@ void Chunk::buildMesh()
 
     if (m_indexCount > 0)
     {
-        VkDeviceSize vertexSize = sizeof(Vertex) * vertices.size();
-        m_vertexBuffer = std::make_unique<Buffer>(
-            m_allocator, vertexSize,
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU);
+        uint32_t vertexSize = sizeof(Vertex) * vertices.size();
+        m_vertexAllocation = m_megaVertexBuffer->allocate(vertexSize);
+        if (m_vertexAllocation.valid) {
+            m_megaVertexBuffer->upload(m_vertexAllocation, vertices.data());
+        }
 
-        m_vertexBuffer->copyData(vertices.data(), vertexSize);
-
-        VkDeviceSize indexSize = sizeof(indices[0]) * indices.size();
-        m_indexBuffer = std::make_unique<Buffer>(
-            m_allocator, indexSize,
-            VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-            VMA_MEMORY_USAGE_CPU_TO_GPU);
-
-        m_indexBuffer->copyData(indices.data(), indexSize);
+        uint32_t indexSize = sizeof(indices[0]) * indices.size();
+        m_indexAllocation = m_megaIndexBuffer->allocate(indexSize);
+        if (m_indexAllocation.valid) {
+            m_megaIndexBuffer->upload(m_indexAllocation, indices.data());
+        }
     }
 }
-void Chunk::draw(VkCommandBuffer commandBuffer)
+
+bool Chunk::save(const std::string& filepath)
 {
-    if (m_indexCount == 0 || !m_vertexBuffer || !m_indexBuffer) return;
+    if (!m_isDirty) return true;
+    
+    std::ofstream out(filepath, std::ios::binary);
+    if (!out) return false;
+    
+    BlockType currentType = m_blocks[0][0][0];
+    uint32_t count = 0;
+    
+    for (int x = 0; x < CHUNK_SIZE; ++x) {
+        for (int y = 0; y < CHUNK_SIZE; ++y) {
+            for (int z = 0; z < CHUNK_SIZE; ++z) {
+                if (m_blocks[x][y][z] == currentType) {
+                    count++;
+                } else {
+                    out.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
+                    out.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
+                    currentType = m_blocks[x][y][z];
+                    count = 1;
+                }
+            }
+        }
+    }
+    out.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
+    out.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
+    
+    m_isDirty = false;
+    return true;
+}
 
-    VkBuffer vertexBuffers[] = {m_vertexBuffer->getBuffer()};
-    VkDeviceSize offsets[] = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
-    vkCmdBindIndexBuffer(commandBuffer, m_indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
-
-    vkCmdDrawIndexed(commandBuffer, m_indexCount, 1, 0, 0, 0);
+bool Chunk::load(const std::string& filepath)
+{
+    std::ifstream in(filepath, std::ios::binary);
+    if (!in) return false;
+    
+    int x = 0, y = 0, z = 0;
+    while (in && x < CHUNK_SIZE) {
+        BlockType type;
+        uint32_t count;
+        in.read(reinterpret_cast<char*>(&type), sizeof(BlockType));
+        if (in.eof()) break;
+        in.read(reinterpret_cast<char*>(&count), sizeof(uint32_t));
+        
+        for (uint32_t i = 0; i < count; ++i) {
+            m_blocks[x][y][z] = type;
+            z++;
+            if (z >= CHUNK_SIZE) {
+                z = 0;
+                y++;
+                if (y >= CHUNK_SIZE) {
+                    y = 0;
+                    x++;
+                    if (x >= CHUNK_SIZE) break;
+                }
+            }
+        }
+    }
+    m_isDirty = false;
+    return true;
 }
