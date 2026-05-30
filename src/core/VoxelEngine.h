@@ -30,11 +30,11 @@ private:
     VulkanContext m_vulkanContext;
 
     std::chrono::time_point<std::chrono::high_resolution_clock> m_lastTime;
-    
+
     bool m_cursorEnabled = false;
     bool m_tabPressedLastFrame = false;
     std::string m_pendingWorldLoad = "";
-    
+
     float m_worldSizeUpdateTimer = 1.0f; // Start at 1.0 to trigger immediately
     uintmax_t m_currentWorldSize = 0;
     std::future<uintmax_t> m_worldSizeFuture;

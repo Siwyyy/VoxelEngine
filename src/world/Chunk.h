@@ -9,7 +9,8 @@
 #include "../renderer/MegaBuffer.h"
 #include "../renderer/GraphicsPipeline.h"
 
-enum class BlockType : uint8_t {
+enum class BlockType : uint8_t
+{
     Air = 0,
     Grass = 1,
     Dirt = 2,
@@ -18,7 +19,8 @@ enum class BlockType : uint8_t {
     Leaves = 5
 };
 
-class Chunk {
+class Chunk
+{
 public:
     static constexpr int CHUNK_SIZE = 64;
 
@@ -30,7 +32,7 @@ public:
 
     void setBlock(int x, int y, int z, BlockType type);
     BlockType getBlock(int x, int y, int z) const;
-    
+
     [[nodiscard]] uint32_t getIndexCount() const { return m_indexCount; }
     [[nodiscard]] glm::vec3 getPosition() const { return m_position; }
 
@@ -45,10 +47,11 @@ public:
 
 private:
     bool isFaceVisible(int x, int y, int z) const;
-    void addFace(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, int x, int y, int z, int faceIndex, BlockType type);
+    void addFace(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, int x, int y, int z, int faceIndex,
+                 BlockType type);
 
     glm::vec3 m_position;
-    
+
     MegaBuffer* m_megaVertexBuffer;
     MegaBuffer* m_megaIndexBuffer;
     BlockAllocation m_vertexAllocation;

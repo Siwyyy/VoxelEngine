@@ -1,4 +1,4 @@
-#include "core/Engine.h"
+#include "core/VoxelEngine.h"
 #include <iostream>
 
 int main()

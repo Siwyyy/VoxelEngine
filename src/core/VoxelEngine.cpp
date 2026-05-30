@@ -1,4 +1,4 @@
-#include "Engine.h"
+#include "VoxelEngine.h"
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -15,12 +15,12 @@ VoxelEngine::VoxelEngine()
     m_camera = std::make_unique<Camera>(glm::vec3(1.6f, 1.5f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -15.0f);
 
     glfwSetInputMode(m_window->getGLFWwindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-    
+
     m_world = std::make_unique<World>(&m_vulkanContext);
-    
+
     m_frameTimes.resize(300, 0.0f);
     m_gpuFrameTimes.resize(300, 0.0f);
-    
+
     loadPlayerState("world1");
 }
 
@@ -35,7 +35,8 @@ void VoxelEngine::savePlayerState()
     if (!m_world || !m_camera) return;
     std::string currentPath = m_world->getWorldPath();
     std::ofstream out(currentPath + "player.dat", std::ios::binary);
-    if (out) {
+    if (out)
+    {
         glm::vec3 cPos = m_camera->getPosition();
         float cYaw = m_camera->getYaw();
         float cPitch = m_camera->getPitch();
@@ -48,7 +49,8 @@ void VoxelEngine::savePlayerState()
 void VoxelEngine::loadPlayerState(const std::string& worldName)
 {
     std::ifstream in("saves/" + worldName + "/player.dat", std::ios::binary);
-    if (in) {
+    if (in)
+    {
         glm::vec3 cPos;
         float cYaw, cPitch;
         in.read(reinterpret_cast<char*>(&cPos), sizeof(cPos));
@@ -56,7 +58,9 @@ void VoxelEngine::loadPlayerState(const std::string& worldName)
         in.read(reinterpret_cast<char*>(&cPitch), sizeof(cPitch));
         m_camera->setPosition(cPos);
         m_camera->setRotation(cYaw, cPitch);
-    } else {
+    }
+    else
+    {
         m_camera->setPosition(glm::vec3(1.6f, 1.5f, 5.0f));
         m_camera->setRotation(-90.0f, -15.0f);
     }
@@ -79,7 +83,7 @@ void VoxelEngine::run()
 void VoxelEngine::initVulkan()
 {
     m_vulkanContext.init(m_window->getGLFWwindow());
-    
+
     m_world = std::make_unique<World>(&m_vulkanContext);
 }
 
@@ -94,9 +98,11 @@ void VoxelEngine::mainLoop()
         m_lastTime = currentTime;
 
         m_graphUpdateTimer += deltaTime;
-        if (m_graphUpdateTimer >= 1.0f / 60.0f) {
+        if (m_graphUpdateTimer >= 1.0f / 60.0f)
+        {
             m_graphUpdateTimer = 0.0f;
-            if (m_frameTimes.size() > 0) {
+            if (m_frameTimes.size() > 0)
+            {
                 m_frameTimes[m_frameTimeIndex] = deltaTime * 1000.0f; // store as ms
                 m_gpuFrameTimes[m_frameTimeIndex] = m_vulkanContext.getGpuFrameTime();
                 m_frameTimeIndex = (m_frameTimeIndex + 1) % m_frameTimes.size();
@@ -105,7 +111,8 @@ void VoxelEngine::mainLoop()
 
         m_window->pollEvents();
 
-        if (!m_pendingWorldLoad.empty()) {
+        if (!m_pendingWorldLoad.empty())
+        {
             ImGui_ImplVulkan_NewFrame();
             ImGui_ImplGlfw_NewFrame();
             ImGui::NewFrame();
@@ -113,19 +120,20 @@ void VoxelEngine::mainLoop()
             ImGui::SetNextWindowPos(ImVec2(0, 0));
             ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
             ImGui::Begin("Loading Screen", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
-            
+
             const char* loadingText = "Loading World...";
             ImVec2 textSize = ImGui::CalcTextSize(loadingText);
-            ImVec2 pos = ImVec2((ImGui::GetIO().DisplaySize.x - textSize.x) * 0.5f, (ImGui::GetIO().DisplaySize.y - textSize.y) * 0.5f);
+            ImVec2 pos = ImVec2((ImGui::GetIO().DisplaySize.x - textSize.x) * 0.5f,
+                                (ImGui::GetIO().DisplaySize.y - textSize.y) * 0.5f);
             ImGui::SetCursorPos(pos);
             ImGui::Text("%s", loadingText);
             ImGui::End();
 
             ImGui::Render();
-            
+
             std::vector<Chunk*> emptyChunks;
             m_vulkanContext.drawFrame(m_camera->getViewMatrix(), emptyChunks);
-            
+
             switchWorld(m_pendingWorldLoad);
             m_pendingWorldLoad = "";
             m_lastTime = std::chrono::high_resolution_clock::now();
@@ -138,11 +146,15 @@ void VoxelEngine::mainLoop()
         }
 
         bool tabPressed = Input::isKeyPressed(LAVA_KEY_TAB);
-        if (tabPressed && !m_tabPressedLastFrame) {
+        if (tabPressed && !m_tabPressedLastFrame)
+        {
             m_cursorEnabled = !m_cursorEnabled;
-            if (m_cursorEnabled) {
+            if (m_cursorEnabled)
+            {
                 glfwSetInputMode(m_window->getGLFWwindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            } else {
+            }
+            else
+            {
                 glfwSetInputMode(m_window->getGLFWwindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
                 m_camera->resetMouse();
             }
@@ -156,17 +168,23 @@ void VoxelEngine::mainLoop()
         ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Once);
         ImGui::SetNextWindowSize(ImVec2(350, 250), ImGuiCond_FirstUseEver);
         ImGui::Begin("Debug Info");
-        
+
         m_worldSizeUpdateTimer += deltaTime;
-        if (m_worldSizeUpdateTimer >= 1.0f && !m_worldSizeFuture.valid()) {
+        if (m_worldSizeUpdateTimer >= 1.0f && !m_worldSizeFuture.valid())
+        {
             m_worldSizeUpdateTimer = 0.0f;
             std::string pathToScan = m_world->getWorldPath();
-            m_worldSizeFuture = std::async(std::launch::async, [pathToScan]() {
+            m_worldSizeFuture = std::async(std::launch::async, [pathToScan]()
+            {
                 uintmax_t size = 0;
-                if (std::filesystem::exists(pathToScan)) {
+                if (std::filesystem::exists(pathToScan))
+                {
                     std::error_code ec;
-                    for (const auto& entry : std::filesystem::recursive_directory_iterator(pathToScan, std::filesystem::directory_options::skip_permission_denied, ec)) {
-                        if (entry.is_regular_file(ec)) {
+                    for (const auto& entry : std::filesystem::recursive_directory_iterator(
+                             pathToScan, std::filesystem::directory_options::skip_permission_denied, ec))
+                    {
+                        if (entry.is_regular_file(ec))
+                        {
                             size += entry.file_size(ec);
                         }
                     }
@@ -174,62 +192,72 @@ void VoxelEngine::mainLoop()
                 return size;
             });
         }
-        
-        if (m_worldSizeFuture.valid() && m_worldSizeFuture.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+
+        if (m_worldSizeFuture.valid() && m_worldSizeFuture.wait_for(std::chrono::seconds(0)) ==
+            std::future_status::ready)
+        {
             m_currentWorldSize = m_worldSizeFuture.get();
         }
-        
+
         std::string pathStr = m_world->getWorldPath();
         std::string worldName = pathStr;
-        if (pathStr.length() > 6) {
+        if (pathStr.length() > 6)
+        {
             worldName = pathStr.substr(6, pathStr.length() - 7);
         }
         ImGui::Text("World: %s (%.2f MB)", worldName.c_str(), m_currentWorldSize / (1024.0f * 1024.0f));
         ImGui::Separator();
-        
+
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
-        
+
         int currentRD = m_world->getRenderDistance();
-        if (ImGui::SliderInt("Render Distance", &currentRD, 2, 32)) {
+        if (ImGui::SliderInt("Render Distance", &currentRD, 2, 32))
+        {
             m_world->setRenderDistance(currentRD);
         }
-        
+
         auto activeChunks = m_world->getActiveChunks();
         ImGui::Text("Active Chunks: %zu", activeChunks.size());
         ImGui::Text("Drawn Chunks: %u", m_vulkanContext.getDrawnChunksCount());
-        
+
         uint32_t totalVertices = 0;
         uint32_t totalIndices = 0;
-        for (const auto& chunk : activeChunks) {
+        for (const auto& chunk : activeChunks)
+        {
             totalIndices += chunk->getIndexCount();
         }
         totalVertices = (totalIndices / 6) * 4;
-        
+
         ImGui::Text("Total Quads (Faces): %u", totalIndices / 6);
         ImGui::Text("Total Vertices: %u", totalVertices);
         ImGui::Text("Total Indices: %u", totalIndices);
-        
+
         ImGui::End();
 
         ImGui::SetNextWindowPos(ImVec2(10, 270), ImGuiCond_Once);
         ImGui::SetNextWindowSize(ImVec2(350, 200), ImGuiCond_FirstUseEver);
         ImGui::Begin("World Selection");
         ImGui::Text("Available Worlds:");
-        if (std::filesystem::exists("saves")) {
-            for (const auto& entry : std::filesystem::directory_iterator("saves")) {
-                if (entry.is_directory()) {
+        if (std::filesystem::exists("saves"))
+        {
+            for (const auto& entry : std::filesystem::directory_iterator("saves"))
+            {
+                if (entry.is_directory())
+                {
                     std::string worldName = entry.path().filename().string();
-                    if (ImGui::Button(worldName.c_str())) {
+                    if (ImGui::Button(worldName.c_str()))
+                    {
                         m_pendingWorldLoad = worldName;
                     }
                 }
             }
         }
         ImGui::Separator();
-        
+
         static char worldNameBuffer[128] = "new_world";
         ImGui::InputText("New World Name", worldNameBuffer, IM_ARRAYSIZE(worldNameBuffer));
-        if (ImGui::Button("Create / Load World")) {
+        if (ImGui::Button("Create / Load World"))
+        {
             m_pendingWorldLoad = std::string(worldNameBuffer);
         }
         ImGui::End();
@@ -237,20 +265,22 @@ void VoxelEngine::mainLoop()
         ImGui::SetNextWindowPos(ImVec2(10, 480), ImGuiCond_Once);
         ImGui::SetNextWindowSize(ImVec2(350, 240), ImGuiCond_FirstUseEver);
         ImGui::Begin("Performance Profiler");
-        
+
         float avgCpu = 0.0f;
         float avgGpu = 0.0f;
         for (float ft : m_frameTimes) avgCpu += ft;
         for (float ft : m_gpuFrameTimes) avgGpu += ft;
         avgCpu /= m_frameTimes.size();
         avgGpu /= m_gpuFrameTimes.size();
-        
+
         ImGui::Text("CPU Frame Time: %.2f ms", avgCpu);
-        ImGui::PlotLines("##CPUGraph", m_frameTimes.data(), m_frameTimes.size(), m_frameTimeIndex, "CPU Frame Time (ms)", 0.0f, 16.6f, ImVec2(ImGui::GetContentRegionAvail().x, 60));
-        
+        ImGui::PlotLines("##CPUGraph", m_frameTimes.data(), m_frameTimes.size(), m_frameTimeIndex,
+                         "CPU Frame Time (ms)", 0.0f, 16.6f, ImVec2(ImGui::GetContentRegionAvail().x, 60));
+
         ImGui::Text("GPU Frame Time: %.2f ms", avgGpu);
-        ImGui::PlotLines("##GPUGraph", m_gpuFrameTimes.data(), m_gpuFrameTimes.size(), m_frameTimeIndex, "GPU Frame Time (ms)", 0.0f, 16.6f, ImVec2(ImGui::GetContentRegionAvail().x, 60));
-        
+        ImGui::PlotLines("##GPUGraph", m_gpuFrameTimes.data(), m_gpuFrameTimes.size(), m_frameTimeIndex,
+                         "GPU Frame Time (ms)", 0.0f, 16.6f, ImVec2(ImGui::GetContentRegionAvail().x, 60));
+
         ImGui::End();
 
         // Rysowanie celownika (crosshair) na środku ekranu
@@ -259,13 +289,16 @@ void VoxelEngine::mainLoop()
         float crosshairSize = 8.0f;
         ImU32 crosshairColor = IM_COL32(255, 255, 255, 200); // lekko przezroczysty biały
         float thickness = 2.0f;
-        
-        drawList->AddLine(ImVec2(center.x - crosshairSize, center.y), ImVec2(center.x + crosshairSize, center.y), crosshairColor, thickness);
-        drawList->AddLine(ImVec2(center.x, center.y - crosshairSize), ImVec2(center.x, center.y + crosshairSize), crosshairColor, thickness);
+
+        drawList->AddLine(ImVec2(center.x - crosshairSize, center.y), ImVec2(center.x + crosshairSize, center.y),
+                          crosshairColor, thickness);
+        drawList->AddLine(ImVec2(center.x, center.y - crosshairSize), ImVec2(center.x, center.y + crosshairSize),
+                          crosshairColor, thickness);
 
         ImGui::Render();
 
-        if (!m_cursorEnabled) {
+        if (!m_cursorEnabled)
+        {
             m_camera->update(deltaTime);
         }
         m_world->update(m_camera->getPosition(), m_camera->getFront(), deltaTime);

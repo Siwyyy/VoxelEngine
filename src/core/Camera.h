@@ -15,7 +15,14 @@ public:
     [[nodiscard]] float getYaw() const { return m_yaw; }
     [[nodiscard]] float getPitch() const { return m_pitch; }
     void setPosition(const glm::vec3& pos) { m_position = pos; }
-    void setRotation(float yaw, float pitch) { m_yaw = yaw; m_pitch = pitch; updateCameraVectors(); }
+
+    void setRotation(float yaw, float pitch)
+    {
+        m_yaw = yaw;
+        m_pitch = pitch;
+        updateCameraVectors();
+    }
+
     void resetMouse() { m_firstMouse = true; }
     void processKeyboard(int key, float deltaTime);
 

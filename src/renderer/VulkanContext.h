@@ -68,7 +68,7 @@ public:
 
     [[nodiscard]] uint32_t getDrawnChunksCount() const { return m_drawnChunksCount; }
     [[nodiscard]] float getGpuFrameTime() const { return m_gpuFrameTime; }
-    
+
     MegaBuffer* getMegaVertexBuffer() const { return m_megaVertexBuffer.get(); }
     MegaBuffer* getMegaIndexBuffer() const { return m_megaIndexBuffer.get(); }
 
@@ -110,12 +110,12 @@ private:
 
     std::unique_ptr<MegaBuffer> m_megaVertexBuffer;
     std::unique_ptr<MegaBuffer> m_megaIndexBuffer;
-    
+
     VkBuffer m_indirectBuffer = VK_NULL_HANDLE;
     VmaAllocation m_indirectBufferAllocation = VK_NULL_HANDLE;
     void* m_indirectMappedData = nullptr;
     uint32_t m_maxIndirectCommands = 30000;
-    
+
     uint32_t m_drawnChunksCount = 0;
 
     void createInstance();
