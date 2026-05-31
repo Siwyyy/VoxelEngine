@@ -3,7 +3,7 @@
 #include <cstring>
 
 Buffer::Buffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
-    : m_allocator(allocator), m_size(size)
+    : m_allocator(allocator)
 {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;

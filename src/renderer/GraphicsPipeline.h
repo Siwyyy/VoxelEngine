@@ -10,7 +10,6 @@ public:
                      const Shader& fragShader);
     ~GraphicsPipeline();
 
-    // Blokujemy kopiowanie
     GraphicsPipeline(const GraphicsPipeline&) = delete;
     GraphicsPipeline& operator=(const GraphicsPipeline&) = delete;
 

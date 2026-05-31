@@ -6,6 +6,7 @@
 #include <condition_variable>
 #include <functional>
 #include <future>
+#include <tuple>
 
 class ThreadPool
 {
@@ -49,11 +50,13 @@ public:
     }
 
     template <class F, class... Args>
-    auto enqueue(F&& f, Args&&... args) -> std::future<typename std::invoke_result<F, Args...>::type>
+    auto enqueue(F&& f, Args&&... args) -> std::future<std::invoke_result_t<F, Args...>>
     {
-        using return_type = typename std::invoke_result<F, Args...>::type;
+        using return_type = std::invoke_result_t<F, Args...>;
         auto task = std::make_shared<std::packaged_task<return_type()>>(
-            std::bind(std::forward<F>(f), std::forward<Args>(args)...)
+            [f = std::forward<F>(f), args_tuple = std::make_tuple(std::forward<Args>(args)...)]() mutable {
+                return std::apply(std::move(f), std::move(args_tuple));
+            }
         );
         std::future<return_type> res = task->get_future();
         {

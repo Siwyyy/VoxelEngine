@@ -19,5 +19,4 @@ private:
     VmaAllocator m_allocator;
     VkBuffer m_buffer = VK_NULL_HANDLE;
     VmaAllocation m_allocation = VK_NULL_HANDLE;
-    VkDeviceSize m_size;
 };

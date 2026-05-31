@@ -10,11 +10,7 @@ struct Vertex
 
     static VkVertexInputBindingDescription getBindingDescription()
     {
-        VkVertexInputBindingDescription bindingDescription{};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-        return bindingDescription;
+        return {0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX};
     }
 
     static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions()

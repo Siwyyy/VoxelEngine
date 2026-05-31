@@ -24,7 +24,7 @@ public:
     }
 
     void resetMouse() { m_firstMouse = true; }
-    void processKeyboard(int key, float deltaTime);
+
 
 private:
     void updateCameraVectors();

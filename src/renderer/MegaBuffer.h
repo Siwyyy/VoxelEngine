@@ -20,18 +20,15 @@ public:
     BlockAllocation allocate(uint32_t size);
     void free(const BlockAllocation& block);
 
-    void upload(const BlockAllocation& block, const void* data);
+    void upload(const BlockAllocation& block, const void* data) const;
 
-    VkBuffer getBuffer() const { return m_buffer; }
+    [[nodiscard]] VkBuffer getBuffer() const { return m_buffer; }
 
 private:
-    VkDevice m_device;
     VmaAllocator m_allocator;
     VkBuffer m_buffer = VK_NULL_HANDLE;
     VmaAllocation m_allocation = VK_NULL_HANDLE;
     void* m_mappedData = nullptr;
-
-    VkDeviceSize m_capacity;
 
     struct FreeBlock
     {
