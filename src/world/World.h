@@ -25,6 +25,12 @@ public:
     int getRenderDistance() const { return m_renderDistance; }
     void setRenderDistance(int distance) { m_renderDistance = distance; }
 
+    void saveAllChunks();
+
+    void processPlayerInteraction(const glm::vec3& cameraPos, const glm::vec3& cameraFront, bool leftClick, bool rightClick);
+    Block getBlockAt(int x, int y, int z) const;
+    void setBlockAt(int x, int y, int z, Block block);
+
     const std::vector<Chunk*>& getActiveChunks() const { return m_activeChunks; }
 
 private:
@@ -51,9 +57,6 @@ private:
     std::unordered_map<ChunkCoord, std::unique_ptr<Chunk>, ChunkCoordHash> m_chunkMap;
     std::vector<Chunk*> m_activeChunks;
 
-    std::unique_ptr<ThreadPool> m_threadPool;
-    std::unordered_map<ChunkCoord, std::future<std::unique_ptr<Chunk>>, ChunkCoordHash> m_chunkFutures;
-
     std::vector<ChunkCoord> m_spiralPattern;
 
     int m_renderDistance = 8;
@@ -69,6 +72,9 @@ private:
     std::vector<ChunkGarbage> m_chunksToDelete;
     std::mutex m_deletionMutex;
     uint64_t m_frameCount = 0;
+
+    std::unordered_map<ChunkCoord, std::future<std::unique_ptr<Chunk>>, ChunkCoordHash> m_chunkFutures;
+    std::unique_ptr<ThreadPool> m_threadPool;
 
     void generateSpiralPattern();
 };

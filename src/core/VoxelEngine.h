@@ -4,6 +4,7 @@
 #include "../renderer/VulkanContext.h"
 #include "../world/World.h"
 #include "Camera.h"
+
 #include <memory>
 #include <vector>
 #include <chrono>
@@ -31,13 +32,15 @@ private:
 
     std::chrono::time_point<std::chrono::high_resolution_clock> m_lastTime;
 
+    float m_clickCooldown = 0.0f;
     bool m_cursorEnabled = false;
     bool m_tabPressedLastFrame = false;
-    std::string m_pendingWorldLoad = "";
+    std::string m_pendingWorldLoad;
 
-    float m_worldSizeUpdateTimer = 1.0f; // Start at 1.0 to trigger immediately
+    float m_worldSizeUpdateTimer = 1.0f;
     uintmax_t m_currentWorldSize = 0;
     std::future<uintmax_t> m_worldSizeFuture;
+    std::future<void> m_backgroundTask;
 
     std::vector<float> m_frameTimes;
     std::vector<float> m_gpuFrameTimes;

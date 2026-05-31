@@ -1,10 +1,9 @@
 #include "MegaBuffer.h"
 #include <stdexcept>
 #include <algorithm>
-#include <cstring>
 
 MegaBuffer::MegaBuffer(VkDevice device, VmaAllocator allocator, VkDeviceSize capacity, VkBufferUsageFlags usage)
-    : m_device(device), m_allocator(allocator), m_capacity(capacity)
+    : m_allocator(allocator)
 {
     VkBufferCreateInfo bufferInfo{};
     bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -23,7 +22,7 @@ MegaBuffer::MegaBuffer(VkDevice device, VmaAllocator allocator, VkDeviceSize cap
     }
 
     m_mappedData = vmaAllocInfo.pMappedData;
-    m_freeBlocks.push_back({0, static_cast<uint32_t>(capacity)});
+    m_freeBlocks.push_back({.offset = 0, .size = static_cast<uint32_t>(capacity)});
 }
 
 MegaBuffer::~MegaBuffer()
@@ -36,7 +35,7 @@ MegaBuffer::~MegaBuffer()
 
 BlockAllocation MegaBuffer::allocate(uint32_t size)
 {
-    if (size == 0) return {0, 0, false};
+    if (size == 0) return {.offset = 0, .size = 0, .valid = false};
     std::lock_guard<std::mutex> lock(m_mutex);
     for (auto it = m_freeBlocks.begin(); it != m_freeBlocks.end(); ++it)
     {
@@ -59,7 +58,7 @@ BlockAllocation MegaBuffer::allocate(uint32_t size)
             return alloc;
         }
     }
-    return {0, 0, false}; // Out of memory
+    return {.offset = 0, .size = 0, .valid = false}; // Out of memory
 }
 
 void MegaBuffer::free(const BlockAllocation& block)
@@ -67,7 +66,7 @@ void MegaBuffer::free(const BlockAllocation& block)
     if (!block.valid) return;
     std::lock_guard<std::mutex> lock(m_mutex);
 
-    m_freeBlocks.push_back({block.offset, block.size});
+    m_freeBlocks.push_back({.offset = block.offset, .size = block.size});
     m_freeBlocks.sort([](const FreeBlock& a, const FreeBlock& b)
     {
         return a.offset < b.offset;
@@ -75,8 +74,7 @@ void MegaBuffer::free(const BlockAllocation& block)
 
     for (auto it = m_freeBlocks.begin(); it != m_freeBlocks.end();)
     {
-        auto next = std::next(it);
-        if (next != m_freeBlocks.end() && it->offset + it->size == next->offset)
+        if (auto next = std::next(it); next != m_freeBlocks.end() && it->offset + it->size == next->offset)
         {
             it->size += next->size;
             m_freeBlocks.erase(next);
@@ -88,7 +86,7 @@ void MegaBuffer::free(const BlockAllocation& block)
     }
 }
 
-void MegaBuffer::upload(const BlockAllocation& block, const void* data)
+void MegaBuffer::upload(const BlockAllocation& block, const void* data) const
 {
     if (!block.valid || !data) return;
     std::memcpy(static_cast<char*>(m_mappedData) + block.offset, data, block.size);

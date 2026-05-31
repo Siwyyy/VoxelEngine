@@ -8,12 +8,10 @@
 #include <chrono>
 #include <iostream>
 #include <stdexcept>
-#include <cstring>
 #include <set>
 #include <string>
 #include <limits>
 #include <algorithm>
-#include <fstream>
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -66,8 +64,8 @@ void VulkanContext::init(GLFWwindow* window)
     createSyncObjects();
     createQueryPool();
 
-    VkDeviceSize vertexMegaSize = 512 * 1024 * 1024; // 512 MB
-    VkDeviceSize indexMegaSize = 256 * 1024 * 1024; // 256 MB
+    VkDeviceSize vertexMegaSize = 512ULL * 1024 * 1024; // 512 MB
+    VkDeviceSize indexMegaSize = 256ULL * 1024 * 1024; // 256 MB
     m_megaVertexBuffer = std::make_unique<MegaBuffer>(m_device, m_allocator, vertexMegaSize,
                                                       VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
     m_megaIndexBuffer = std::make_unique<MegaBuffer>(m_device, m_allocator, indexMegaSize,
@@ -105,9 +103,9 @@ void VulkanContext::cleanup()
 
     vkDeviceWaitIdle(m_device);
 
-    for (size_t i = 0; i < m_renderFinishedSemaphores.size(); i++)
+    for (VkSemaphore semaphore : m_renderFinishedSemaphores)
     {
-        vkDestroySemaphore(m_device, m_renderFinishedSemaphores[i], nullptr);
+        vkDestroySemaphore(m_device, semaphore, nullptr);
     }
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
     {
@@ -297,7 +295,7 @@ void VulkanContext::createLogicalDevice()
     QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    std::set<uint32_t> uniqueQueueFamilies = {indices.graphicsFamily.value_or(0), indices.presentFamily.value_or(0)};
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies)
@@ -336,8 +334,8 @@ void VulkanContext::createLogicalDevice()
         throw std::runtime_error("Failed to create logical device!");
     }
 
-    vkGetDeviceQueue(m_device, indices.graphicsFamily.value(), 0, &m_graphicsQueue);
-    vkGetDeviceQueue(m_device, indices.presentFamily.value(), 0, &m_presentQueue);
+    vkGetDeviceQueue(m_device, indices.graphicsFamily.value_or(0), 0, &m_graphicsQueue);
+    vkGetDeviceQueue(m_device, indices.presentFamily.value_or(0), 0, &m_presentQueue);
 
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.physicalDevice = m_physicalDevice;
@@ -453,7 +451,7 @@ void VulkanContext::createSwapchain(GLFWwindow* window)
     createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
-    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value(), indices.presentFamily.value()};
+    uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value_or(0), indices.presentFamily.value_or(0)};
 
     if (indices.graphicsFamily != indices.presentFamily)
     {
@@ -520,7 +518,7 @@ void VulkanContext::createCommandPool()
     VkCommandPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+    poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value_or(0);
 
     if (vkCreateCommandPool(m_device, &poolInfo, nullptr, &m_commandPool) != VK_SUCCESS)
     {
@@ -602,7 +600,7 @@ void VulkanContext::drawFrame(const glm::mat4& viewMatrix, const std::vector<Chu
         if (vkGetQueryPoolResults(m_device, m_queryPool, m_currentFrame * 2, 2, sizeof(timestamps), timestamps,
                                   sizeof(uint64_t), VK_QUERY_RESULT_64_BIT) == VK_SUCCESS)
         {
-            m_gpuFrameTime = (timestamps[1] - timestamps[0]) * m_timestampPeriod * 1e-6f;
+            m_gpuFrameTime = static_cast<float>(timestamps[1] - timestamps[0]) * m_timestampPeriod * 1e-6f;
         }
     }
     m_firstFrame[m_currentFrame] = false;
@@ -744,12 +742,12 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
     VkRect2D scissor{};
-    scissor.offset = {0, 0};
+    scissor.offset = {.x = 0, .y = 0};
     scissor.extent = m_swapchainExtent;
     vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
     glm::mat4 projOriginal = glm::perspective(glm::radians(45.0f),
-                                              m_swapchainExtent.width / (float)m_swapchainExtent.height,
+                                              static_cast<float>(m_swapchainExtent.width) / static_cast<float>(m_swapchainExtent.height),
                                               0.1f, 100.0f);
     glm::mat4 proj = projOriginal;
     proj[1][1] *= -1;
@@ -788,7 +786,7 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
         cmd.indexCount = chunk->getIndexCount();
         cmd.instanceCount = 1;
         cmd.firstIndex = chunk->getIndexOffset() / sizeof(uint32_t);
-        cmd.vertexOffset = chunk->getVertexOffset() / sizeof(Vertex);
+        cmd.vertexOffset = static_cast<int32_t>(chunk->getVertexOffset() / sizeof(Vertex));
         cmd.firstInstance = 0;
 
         indirectCommands.push_back(cmd);
@@ -799,7 +797,7 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     {
         std::memcpy(m_indirectMappedData, indirectCommands.data(),
                     indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand));
-        vkCmdDrawIndexedIndirect(commandBuffer, m_indirectBuffer, 0, indirectCommands.size(),
+        vkCmdDrawIndexedIndirect(commandBuffer, m_indirectBuffer, 0, static_cast<uint32_t>(indirectCommands.size()),
                                  sizeof(VkDrawIndexedIndirectCommand));
     }
 
@@ -837,7 +835,7 @@ void VulkanContext::initImGui(GLFWwindow* window)
     init_info.Instance = m_instance;
     init_info.PhysicalDevice = m_physicalDevice;
     init_info.Device = m_device;
-    init_info.QueueFamily = findQueueFamilies(m_physicalDevice).graphicsFamily.value();
+    init_info.QueueFamily = findQueueFamilies(m_physicalDevice).graphicsFamily.value_or(0);
     init_info.Queue = m_graphicsQueue;
     init_info.DescriptorPoolSize = 1000;
     init_info.MinImageCount = MAX_FRAMES_IN_FLIGHT;
@@ -934,11 +932,8 @@ VkFormat VulkanContext::findSupportedFormat(const std::vector<VkFormat>& candida
         VkFormatProperties props;
         vkGetPhysicalDeviceFormatProperties(m_physicalDevice, format, &props);
 
-        if (tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features)
-        {
-            return format;
-        }
-        else if (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features)
+        if ((tiling == VK_IMAGE_TILING_LINEAR && (props.linearTilingFeatures & features) == features) ||
+            (tiling == VK_IMAGE_TILING_OPTIMAL && (props.optimalTilingFeatures & features) == features))
         {
             return format;
         }
