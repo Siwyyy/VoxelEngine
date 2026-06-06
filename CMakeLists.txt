@@ -3,12 +3,18 @@ project(VoxelEngine)
 
 set(CMAKE_CXX_STANDARD 20)
 
-find_program(CLANG_TIDY_EXE NAMES clang-tidy)
-if(CLANG_TIDY_EXE)
-    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE};-checks=bugprone-*,modernize-*,performance-*,clang-diagnostic-*,-modernize-use-trailing-return-type")
-    message(STATUS "Clang-Tidy found and enabled: ${CLANG_TIDY_EXE}")
+option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
+
+if(ENABLE_CLANG_TIDY)
+    find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+    if(CLANG_TIDY_EXE)
+        set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE};-checks=bugprone-*,modernize-*,performance-*,clang-diagnostic-*,-modernize-use-trailing-return-type")
+        message(STATUS "Clang-Tidy found and enabled: ${CLANG_TIDY_EXE}")
+    else()
+        message(WARNING "Clang-Tidy not found! Code analysis disabled.")
+    endif()
 else()
-    message(WARNING "Clang-Tidy not found! Code analysis disabled.")
+    message(STATUS "Clang-Tidy analysis is disabled (ENABLE_CLANG_TIDY=OFF).")
 endif()
 
 find_package(Vulkan REQUIRED)

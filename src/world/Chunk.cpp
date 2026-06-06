@@ -275,7 +275,7 @@ void Chunk::buildMesh()
             }
         };
 
-        MaskCell mask[256][256];
+        MaskCell mask[CHUNK_SIZE][CHUNK_SIZE];
 
         for (x[d] = -1; x[d] < dim_d; ++x[d])
         {

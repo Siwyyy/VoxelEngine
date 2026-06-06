@@ -16,8 +16,6 @@ VoxelEngine::VoxelEngine()
 
     glfwSetInputMode(m_window->getGLFWwindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-    m_world = std::make_unique<World>(&m_vulkanContext);
-
     m_frameTimes.resize(300, 0.0f);
     m_gpuFrameTimes.resize(300, 0.0f);
 

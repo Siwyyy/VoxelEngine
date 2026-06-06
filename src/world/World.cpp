@@ -333,6 +333,10 @@ void World::update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, flo
         if (it->second.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
         {
             m_chunkMap[it->first] = it->second.get();
+            if (m_chunkMap[it->first])
+            {
+                m_chunkMap[it->first]->setDirty(false);
+            }
             it = m_chunkFutures.erase(it);
         }
         else
