@@ -79,67 +79,6 @@ void Chunk::generateTerrain()
         }
     }
 
-    // Temporary basic tree generation just for testing 3D chunk boundary logic.
-    // Full cross-chunk trees will be added next.
-    int chunkX = static_cast<int>(std::floor(m_position.x / static_cast<float>(CHUNK_SIZE)));
-    int chunkZ = static_cast<int>(std::floor(m_position.z / static_cast<float>(CHUNK_SIZE)));
-    int hash = std::abs(chunkX * 73856093 ^ chunkZ * 19349663);
-
-    if (hash % 4 == 0)
-    {
-        int tx = 32;
-        int tz = 32;
-
-        // Find surface globally for this x,z
-        float noiseValue = m_noise.GetNoise(m_position.x + static_cast<float>(tx), m_position.z + static_cast<float>(tz));
-        int terrainHeight = static_cast<int>((noiseValue + 1.0f) * 0.5f * 60.0f) + 15;
-
-        // Check if tree trunk should exist in this vertical chunk
-        int treeHeight = 20 + (hash % 15);
-        int leavesRadius = 8;
-
-        for (int gy = terrainHeight; gy <= terrainHeight + treeHeight + leavesRadius; gy++)
-        {
-            int posY = static_cast<int>(std::round(m_position.y));
-            if (gy >= posY && gy < posY + CHUNK_SIZE)
-            {
-                int ly = gy - posY;
-
-                if (gy < terrainHeight + treeHeight)
-                {
-                    // Trunk
-                    m_blocks[tx][ly][tz] = BlockType::Wood;
-                }
-                else
-                {
-                    // Leaves
-                    for (int dx = -leavesRadius; dx <= leavesRadius; ++dx)
-                    {
-                        for (int dy = -leavesRadius; dy <= leavesRadius; ++dy)
-                        {
-                            for (int dz = -leavesRadius; dz <= leavesRadius; ++dz)
-                            {
-                                if (dx * dx + dy * dy + dz * dz <= leavesRadius * leavesRadius)
-                                {
-                                    int lx = tx + dx;
-                                    int lz = tz + dz;
-                                    int check_ly = ly + dy;
-                                    if (lx >= 0 && lx < CHUNK_SIZE && check_ly >= 0 && check_ly < CHUNK_SIZE && lz >= 0
-                                        && lz < CHUNK_SIZE)
-                                    {
-                                        if (m_blocks[lx][check_ly][lz] == BlockType::Air)
-                                        {
-                                            m_blocks[lx][check_ly][lz] = BlockType::Leaves;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     m_isDirty = true;
     m_isSaveDirty = true;
@@ -201,10 +140,7 @@ void Chunk::addFace(std::vector<Vertex>& vertices, std::vector<uint32_t>& indice
         break;
     case BlockType::Stone: color = {0.5f, 0.5f, 0.5f};
         break;
-    case BlockType::Wood: color = {0.4f, 0.2f, 0.0f};
-        break;
-    case BlockType::Leaves: color = {0.1f, 0.6f, 0.1f};
-        break;
+
     case BlockType::Water: color = {0.2f, 0.4f, 0.9f};
         break;
     case BlockType::Air: color = {1.0f, 1.0f, 1.0f};
@@ -365,9 +301,7 @@ void Chunk::buildMesh()
                             break;
                         case BlockType::Stone: color = {0.5f, 0.5f, 0.5f};
                             break;
-                        case BlockType::Wood: color = {0.4f, 0.2f, 0.0f};
-                            break;
-                        case BlockType::Leaves: color = {0.1f, 0.6f, 0.1f};
+
                             break;
                         case BlockType::Water: color = {0.2f, 0.4f, 0.9f};
                             break;
