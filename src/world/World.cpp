@@ -160,7 +160,7 @@ void World::processPlayerInteraction(const glm::vec3& cameraPos, const glm::vec3
                 int camZ = static_cast<int>(std::floor(rayStart.z + 0.5f));
                 
                 if (px != camX || py != camY || pz != camZ) {
-                    setBlockAt(px, py, pz, Block(BlockType::Wood));
+                    setBlockAt(px, py, pz, Block(BlockType::Stone));
                 }
             }
             break;
