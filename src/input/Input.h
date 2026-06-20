@@ -1,14 +1,20 @@
 #pragma once
-#include <glm/vec2.hpp>
 #include <cstdint>
+
+#include <glm/vec2.hpp>
 
 class Input
 {
 public:
-    virtual ~Input() = default;
+    Input()                        = default;
+    Input(const Input&)            = delete;
+    Input& operator=(const Input&) = delete;
+    Input(Input&&)                 = delete;
+    Input& operator=(Input&&)      = delete;
+    virtual ~Input()               = default;
 
-    inline static bool isKeyPressed(int32_t keycode) { return s_instance->isKeyPressedImpl(keycode); }
-    inline static bool isMouseButtonPressed(int32_t button) { return s_instance->isMouseButtonPressedImpl(button); }
+    inline static bool isKeyPressed(const int32_t keycode) { return s_instance->isKeyPressedImpl(keycode); }
+    inline static bool isMouseButtonPressed(const int32_t button) { return s_instance->isMouseButtonPressedImpl(button); }
     inline static glm::vec2 getMousePosition() { return s_instance->getMousePositionImpl(); }
 
 protected:

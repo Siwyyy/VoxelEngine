@@ -1,14 +1,15 @@
 #include "MegaBuffer.h"
-#include <stdexcept>
-#include <algorithm>
 
-MegaBuffer::MegaBuffer(VkDevice device, VmaAllocator allocator, VkDeviceSize capacity, VkBufferUsageFlags usage)
+#include <algorithm>
+#include <stdexcept>
+
+MegaBuffer::MegaBuffer(VkDevice device, const VmaAllocator allocator, const VkDeviceSize capacity, const VkBufferUsageFlags usage)
     : m_allocator(allocator)
 {
     VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = capacity;
-    bufferInfo.usage = usage;
+    bufferInfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size        = capacity;
+    bufferInfo.usage       = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     VmaAllocationCreateInfo allocInfo{};
@@ -33,18 +34,18 @@ MegaBuffer::~MegaBuffer()
     }
 }
 
-BlockAllocation MegaBuffer::allocate(uint32_t size)
+BlockAllocation MegaBuffer::allocate(const uint32_t size)
 {
     if (size == 0) return {.offset = 0, .size = 0, .valid = false};
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard lock(m_mutex);
     for (auto it = m_freeBlocks.begin(); it != m_freeBlocks.end(); ++it)
     {
         if (it->size >= size)
         {
             BlockAllocation alloc;
             alloc.offset = it->offset;
-            alloc.size = size;
-            alloc.valid = true;
+            alloc.size   = size;
+            alloc.valid  = true;
 
             if (it->size == size)
             {
@@ -53,7 +54,7 @@ BlockAllocation MegaBuffer::allocate(uint32_t size)
             else
             {
                 it->offset += size;
-                it->size -= size;
+                it->size   -= size;
             }
             return alloc;
         }
@@ -64,7 +65,7 @@ BlockAllocation MegaBuffer::allocate(uint32_t size)
 void MegaBuffer::free(const BlockAllocation& block)
 {
     if (!block.valid) return;
-    std::lock_guard<std::mutex> lock(m_mutex);
+    std::lock_guard lock(m_mutex);
 
     m_freeBlocks.push_back({.offset = block.offset, .size = block.size});
     m_freeBlocks.sort([](const FreeBlock& a, const FreeBlock& b)

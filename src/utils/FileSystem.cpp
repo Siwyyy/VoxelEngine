@@ -1,4 +1,5 @@
 #include "FileSystem.h"
+
 #include <fstream>
 #include <stdexcept>
 
@@ -20,7 +21,7 @@ std::filesystem::path FileSystem::getExecutableDir()
 
 std::vector<char> FileSystem::readFile(const std::string& relativePath)
 {
-    std::filesystem::path fullPath = getExecutableDir() / relativePath;
+    const std::filesystem::path fullPath = getExecutableDir() / relativePath;
 
     std::ifstream file(fullPath, std::ios::ate | std::ios::binary);
 
@@ -29,7 +30,7 @@ std::vector<char> FileSystem::readFile(const std::string& relativePath)
         throw std::runtime_error("Failed to open file: " + fullPath.string());
     }
 
-    size_t fileSize = static_cast<size_t>(file.tellg());
+    const size_t fileSize = static_cast<size_t>(file.tellg());
     std::vector<char> buffer(fileSize);
 
     file.seekg(0);

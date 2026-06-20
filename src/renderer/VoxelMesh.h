@@ -1,6 +1,7 @@
 #pragma once
-#include "Vertex.h"
 #include <vector>
+
+#include "Vertex.h"
 
 class VoxelMesh
 {

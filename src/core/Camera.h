@@ -16,15 +16,14 @@ public:
     [[nodiscard]] float getPitch() const { return m_pitch; }
     void setPosition(const glm::vec3& pos) { m_position = pos; }
 
-    void setRotation(float yaw, float pitch)
+    void setRotation(const float yaw, const float pitch)
     {
-        m_yaw = yaw;
+        m_yaw   = yaw;
         m_pitch = pitch;
         updateCameraVectors();
     }
 
     void resetMouse() { m_firstMouse = true; }
-
 
 private:
     void updateCameraVectors();
@@ -38,10 +37,10 @@ private:
     float m_yaw;
     float m_pitch;
 
-    float m_movementSpeed = 1.4f; // 1.4 m/s (szybkość chodu)
+    float m_movementSpeed    = 1.4f; // 1.4 m/s (szybkość chodu)
     float m_mouseSensitivity = 0.1f;
 
     bool m_firstMouse = true;
-    float m_lastX = 0.0f;
-    float m_lastY = 0.0f;
+    float m_lastX     = 0.0f;
+    float m_lastY     = 0.0f;
 };

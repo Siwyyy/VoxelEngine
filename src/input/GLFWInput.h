@@ -1,11 +1,12 @@
 #pragma once
 #include "Input.h"
+
 #include <GLFW/glfw3.h>
 
 class GLFWInput final : public Input
 {
 public:
-    GLFWInput(GLFWwindow* window);
+    explicit GLFWInput(GLFWwindow* window);
 
 private:
     [[nodiscard]] bool isKeyPressedImpl(int32_t keycode) const override;

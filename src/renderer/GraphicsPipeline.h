@@ -10,7 +10,7 @@ public:
                      const Shader& fragShader);
     ~GraphicsPipeline();
 
-    GraphicsPipeline(const GraphicsPipeline&) = delete;
+    GraphicsPipeline(const GraphicsPipeline&)            = delete;
     GraphicsPipeline& operator=(const GraphicsPipeline&) = delete;
 
     [[nodiscard]] VkPipeline getPipeline() const { return m_pipeline; }
@@ -20,6 +20,6 @@ public:
 
 private:
     VkDevice m_device;
-    VkPipeline m_pipeline = VK_NULL_HANDLE;
+    VkPipeline m_pipeline     = VK_NULL_HANDLE;
     VkPipelineLayout m_layout = VK_NULL_HANDLE;
 };

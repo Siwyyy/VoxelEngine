@@ -1,8 +1,9 @@
 #pragma once
-#include <vulkan/vulkan.h>
-#include <vk_mem_alloc.h>
 #include <list>
 #include <mutex>
+
+#include <vma/vk_mem_alloc.h>
+#include <vulkan/vulkan.h>
 
 struct BlockAllocation
 {
@@ -26,9 +27,9 @@ public:
 
 private:
     VmaAllocator m_allocator;
-    VkBuffer m_buffer = VK_NULL_HANDLE;
+    VkBuffer m_buffer          = VK_NULL_HANDLE;
     VmaAllocation m_allocation = VK_NULL_HANDLE;
-    void* m_mappedData = nullptr;
+    void* m_mappedData         = nullptr;
 
     struct FreeBlock
     {

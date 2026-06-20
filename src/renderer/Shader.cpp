@@ -1,16 +1,18 @@
 #include "Shader.h"
-#include "../utils/FileSystem.h"
+
 #include <stdexcept>
 
-Shader::Shader(VkDevice device, const std::string& filePath)
+#include "utils/FileSystem.h"
+
+Shader::Shader(const VkDevice device, const std::string& filePath)
     : m_device(device)
 {
-    auto code = FileSystem::readFile(filePath);
+    const auto code = FileSystem::readFile(filePath);
 
     VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
+    createInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
     createInfo.codeSize = code.size();
-    createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
+    createInfo.pCode    = reinterpret_cast<const uint32_t*>(code.data());
 
     if (vkCreateShaderModule(m_device, &createInfo, nullptr, &m_module) != VK_SUCCESS)
     {
@@ -40,8 +42,8 @@ Shader& Shader::operator=(Shader&& other) noexcept
         {
             vkDestroyShaderModule(m_device, m_module, nullptr);
         }
-        m_device = other.m_device;
-        m_module = other.m_module;
+        m_device       = other.m_device;
+        m_module       = other.m_module;
         other.m_module = VK_NULL_HANDLE;
     }
     return *this;

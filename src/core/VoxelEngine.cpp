@@ -1,17 +1,20 @@
 #include "VoxelEngine.h"
-#include <iostream>
+
 #include <filesystem>
 #include <fstream>
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_vulkan.h>
-#include "../input/GLFWInput.h"
-#include "../input/KeyCodes.h"
+#include <iostream>
+
+#include <imgui/imgui.h>
+#include <imgui/backends/imgui_impl_glfw.h>
+#include <imgui/backends/imgui_impl_vulkan.h>
+
+#include "input/GLFWInput.h"
+#include "input/KeyCodes.h"
 
 VoxelEngine::VoxelEngine()
 {
     m_window = std::make_unique<Window>(m_width, m_height, "Voxel Engine");
-    m_input = std::make_unique<GLFWInput>(m_window->getGLFWwindow());
+    m_input  = std::make_unique<GLFWInput>(m_window->getGLFWwindow());
     m_camera = std::make_unique<Camera>(glm::vec3(1.6f, 1.5f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -15.0f);
 
     glfwSetInputMode(m_window->getGLFWwindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -22,27 +25,39 @@ VoxelEngine::VoxelEngine()
     loadPlayerState("world1");
 }
 
-VoxelEngine::~VoxelEngine()
+VoxelEngine::~VoxelEngine() = default;
+
+void VoxelEngine::run()
 {
+    initVulkan();
+    mainLoop();
+    cleanup();
 }
 
-void VoxelEngine::savePlayerState()
+void VoxelEngine::switchWorld(const std::string& worldName) const
+{
+    savePlayerState();
+    m_world->changeWorld("saves/" + worldName + "/");
+    loadPlayerState(worldName);
+}
+
+void VoxelEngine::savePlayerState() const
 {
     if (!m_world || !m_camera) return;
-    std::string currentPath = m_world->getWorldPath();
+    const std::string currentPath = m_world->getWorldPath();
     std::ofstream out(currentPath + "player.dat", std::ios::binary);
     if (out)
     {
-        glm::vec3 cPos = m_camera->getPosition();
-        float cYaw = m_camera->getYaw();
-        float cPitch = m_camera->getPitch();
+        const glm::vec3 cPos = m_camera->getPosition();
+        const float cYaw     = m_camera->getYaw();
+        const float cPitch   = m_camera->getPitch();
         out.write(reinterpret_cast<const char*>(&cPos), sizeof(cPos));
         out.write(reinterpret_cast<const char*>(&cYaw), sizeof(cYaw));
         out.write(reinterpret_cast<const char*>(&cPitch), sizeof(cPitch));
     }
 }
 
-void VoxelEngine::loadPlayerState(const std::string& worldName)
+void VoxelEngine::loadPlayerState(const std::string& worldName) const
 {
     std::ifstream in("saves/" + worldName + "/player.dat", std::ios::binary);
     if (in)
@@ -60,20 +75,6 @@ void VoxelEngine::loadPlayerState(const std::string& worldName)
         m_camera->setPosition(glm::vec3(1.6f, 1.5f, 5.0f));
         m_camera->setRotation(-90.0f, -15.0f);
     }
-}
-
-void VoxelEngine::switchWorld(const std::string& worldName)
-{
-    savePlayerState();
-    m_world->changeWorld("saves/" + worldName + "/");
-    loadPlayerState(worldName);
-}
-
-void VoxelEngine::run()
-{
-    initVulkan();
-    mainLoop();
-    cleanup();
 }
 
 void VoxelEngine::initVulkan()
@@ -106,10 +107,10 @@ void VoxelEngine::mainLoop()
             ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
             ImGui::Begin("Saving Screen", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
 
-            const char* loadingText = "Saving World, please wait...";
-            ImVec2 textSize = ImGui::CalcTextSize(loadingText);
-            ImVec2 pos = ImVec2((ImGui::GetIO().DisplaySize.x - textSize.x) * 0.5f,
-                                (ImGui::GetIO().DisplaySize.y - textSize.y) * 0.5f);
+            auto loadingText = "Saving World, please wait...";
+            ImVec2 textSize  = ImGui::CalcTextSize(loadingText);
+            auto pos         = ImVec2((ImGui::GetIO().DisplaySize.x - textSize.x) * 0.5f,
+                                      (ImGui::GetIO().DisplaySize.y - textSize.y) * 0.5f);
             ImGui::SetCursorPos(pos);
             ImGui::Text("%s", loadingText);
             ImGui::End();
@@ -123,8 +124,8 @@ void VoxelEngine::mainLoop()
         }
 
         auto currentTime = std::chrono::high_resolution_clock::now();
-        float deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - m_lastTime).count();
-        m_lastTime = currentTime;
+        float deltaTime  = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - m_lastTime).count();
+        m_lastTime       = currentTime;
 
         m_graphUpdateTimer += deltaTime;
         if (m_graphUpdateTimer >= 1.0f / 60.0f)
@@ -132,9 +133,9 @@ void VoxelEngine::mainLoop()
             m_graphUpdateTimer = 0.0f;
             if (!m_frameTimes.empty())
             {
-                m_frameTimes[m_frameTimeIndex] = deltaTime * 1000.0f; // store as ms
+                m_frameTimes[m_frameTimeIndex]    = deltaTime * 1000.0f; // store as ms
                 m_gpuFrameTimes[m_frameTimeIndex] = m_vulkanContext.getGpuFrameTime();
-                m_frameTimeIndex = (m_frameTimeIndex + 1) % m_frameTimes.size();
+                m_frameTimeIndex                  = (m_frameTimeIndex + 1) % m_frameTimes.size();
             }
         }
 
@@ -150,10 +151,10 @@ void VoxelEngine::mainLoop()
             ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
             ImGui::Begin("Loading Screen", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
 
-            const char* loadingText = "Loading World...";
-            ImVec2 textSize = ImGui::CalcTextSize(loadingText);
-            ImVec2 pos = ImVec2((ImGui::GetIO().DisplaySize.x - textSize.x) * 0.5f,
-                                (ImGui::GetIO().DisplaySize.y - textSize.y) * 0.5f);
+            auto loadingText = "Loading World...";
+            ImVec2 textSize  = ImGui::CalcTextSize(loadingText);
+            auto pos         = ImVec2((ImGui::GetIO().DisplaySize.x - textSize.x) * 0.5f,
+                                      (ImGui::GetIO().DisplaySize.y - textSize.y) * 0.5f);
             ImGui::SetCursorPos(pos);
             ImGui::Text("%s", loadingText);
             ImGui::End();
@@ -165,23 +166,17 @@ void VoxelEngine::mainLoop()
 
             switchWorld(m_pendingWorldLoad);
             m_pendingWorldLoad = "";
-            m_lastTime = std::chrono::high_resolution_clock::now();
+            m_lastTime         = std::chrono::high_resolution_clock::now();
             continue;
         }
 
-        if (Input::isKeyPressed(LAVA_KEY_ESCAPE))
-        {
-            glfwSetWindowShouldClose(m_window->getGLFWwindow(), GLFW_TRUE);
-        }
+        if (Input::isKeyPressed(LAVA_KEY_ESCAPE)) { glfwSetWindowShouldClose(m_window->getGLFWwindow(), GLFW_TRUE); }
 
         bool tabPressed = Input::isKeyPressed(LAVA_KEY_TAB);
         if (tabPressed && !m_tabPressedLastFrame)
         {
             m_cursorEnabled = !m_cursorEnabled;
-            if (m_cursorEnabled)
-            {
-                glfwSetInputMode(m_window->getGLFWwindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL);
-            }
+            if (m_cursorEnabled) { glfwSetInputMode(m_window->getGLFWwindow(), GLFW_CURSOR, GLFW_CURSOR_NORMAL); }
             else
             {
                 glfwSetInputMode(m_window->getGLFWwindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
@@ -203,19 +198,18 @@ void VoxelEngine::mainLoop()
         {
             m_worldSizeUpdateTimer = 0.0f;
             std::string pathToScan = m_world->getWorldPath();
-            m_worldSizeFuture = std::async(std::launch::async, [pathToScan]()
+            m_worldSizeFuture      = std::async(std::launch::async, [pathToScan]()
             {
                 uintmax_t size = 0;
                 if (std::filesystem::exists(pathToScan))
                 {
                     std::error_code ec;
-                    for (const auto& entry : std::filesystem::recursive_directory_iterator(
-                             pathToScan, std::filesystem::directory_options::skip_permission_denied, ec))
+                    for (const auto& entry: std::filesystem::recursive_directory_iterator(
+                             pathToScan,
+                             std::filesystem::directory_options::skip_permission_denied,
+                             ec))
                     {
-                        if (entry.is_regular_file(ec))
-                        {
-                            size += entry.file_size(ec);
-                        }
+                        if (entry.is_regular_file(ec)) { size += entry.file_size(ec); }
                     }
                 }
                 return size;
@@ -223,37 +217,26 @@ void VoxelEngine::mainLoop()
         }
 
         if (m_worldSizeFuture.valid() && m_worldSizeFuture.wait_for(std::chrono::seconds(0)) ==
-            std::future_status::ready)
-        {
-            m_currentWorldSize = m_worldSizeFuture.get();
-        }
+            std::future_status::ready) { m_currentWorldSize = m_worldSizeFuture.get(); }
 
-        std::string pathStr = m_world->getWorldPath();
+        std::string pathStr         = m_world->getWorldPath();
         std::string activeWorldName = pathStr;
-        if (pathStr.length() > 6)
-        {
-            activeWorldName = pathStr.substr(6, pathStr.length() - 7);
-        }
-        ImGui::Text("World: %s (%.2f MB)", activeWorldName.c_str(), static_cast<float>(m_currentWorldSize) / (1024.0f * 1024.0f));
+        if (pathStr.length() > 6) { activeWorldName = pathStr.substr(6, pathStr.length() - 7); }
+        ImGui::Text("World: %s (%.2f MB)", activeWorldName.c_str(),
+                    static_cast<float>(m_currentWorldSize) / (1024.0f * 1024.0f));
         ImGui::Separator();
 
         ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 
         int currentRd = m_world->getRenderDistance();
-        if (ImGui::SliderInt("Render Distance", &currentRd, 2, 32))
-        {
-            m_world->setRenderDistance(currentRd);
-        }
+        if (ImGui::SliderInt("Render Distance", &currentRd, 2, 32)) { m_world->setRenderDistance(currentRd); }
 
         auto activeChunks = m_world->getActiveChunks();
         ImGui::Text("Active Chunks: %zu", activeChunks.size());
         ImGui::Text("Drawn Chunks: %u", m_vulkanContext.getDrawnChunksCount());
 
         uint32_t totalIndices = 0;
-        for (const auto& chunk : activeChunks)
-        {
-            totalIndices += chunk->getIndexCount();
-        }
+        for (const auto& chunk: activeChunks) { totalIndices += chunk->getIndexCount(); }
         uint32_t totalVertices = (totalIndices / 6) * 4;
 
         ImGui::Text("Total Quads (Faces): %u", totalIndices / 6);
@@ -268,15 +251,12 @@ void VoxelEngine::mainLoop()
         ImGui::Text("Available Worlds:");
         if (std::filesystem::exists("saves"))
         {
-            for (const auto& entry : std::filesystem::directory_iterator("saves"))
+            for (const auto& entry: std::filesystem::directory_iterator("saves"))
             {
                 if (entry.is_directory())
                 {
                     std::string worldName = entry.path().filename().string();
-                    if (ImGui::Button(worldName.c_str()))
-                    {
-                        m_pendingWorldLoad = worldName;
-                    }
+                    if (ImGui::Button(worldName.c_str())) { m_pendingWorldLoad = worldName; }
                 }
             }
         }
@@ -284,10 +264,7 @@ void VoxelEngine::mainLoop()
 
         static char worldNameBuffer[128] = "new_world";
         ImGui::InputText("New World Name", worldNameBuffer, IM_ARRAYSIZE(worldNameBuffer));
-        if (ImGui::Button("Create / Load World"))
-        {
-            m_pendingWorldLoad = std::string(worldNameBuffer);
-        }
+        if (ImGui::Button("Create / Load World")) { m_pendingWorldLoad = std::string(worldNameBuffer); }
         ImGui::End();
 
         ImGui::SetNextWindowPos(ImVec2(10, 480), ImGuiCond_Once);
@@ -296,27 +273,29 @@ void VoxelEngine::mainLoop()
 
         float avgCpu = 0.0f;
         float avgGpu = 0.0f;
-        for (float ft : m_frameTimes) avgCpu += ft;
-        for (float ft : m_gpuFrameTimes) avgGpu += ft;
+        for (float ft: m_frameTimes) avgCpu += ft;
+        for (float ft: m_gpuFrameTimes) avgGpu += ft;
         avgCpu /= static_cast<float>(m_frameTimes.size());
         avgGpu /= static_cast<float>(m_gpuFrameTimes.size());
 
         ImGui::Text("CPU Frame Time: %.2f ms", avgCpu);
-        ImGui::PlotLines("##CPUGraph", m_frameTimes.data(), static_cast<int>(m_frameTimes.size()), static_cast<int>(m_frameTimeIndex),
+        ImGui::PlotLines("##CPUGraph", m_frameTimes.data(), static_cast<int>(m_frameTimes.size()),
+                         static_cast<int>(m_frameTimeIndex),
                          "CPU Frame Time (ms)", 0.0f, 30.0f, ImVec2(ImGui::GetContentRegionAvail().x, 60));
 
         ImGui::Text("GPU Frame Time: %.2f ms", avgGpu);
-        ImGui::PlotLines("##GPUGraph", m_gpuFrameTimes.data(), static_cast<int>(m_gpuFrameTimes.size()), static_cast<int>(m_frameTimeIndex),
+        ImGui::PlotLines("##GPUGraph", m_gpuFrameTimes.data(), static_cast<int>(m_gpuFrameTimes.size()),
+                         static_cast<int>(m_frameTimeIndex),
                          "GPU Frame Time (ms)", 0.0f, 30.0f, ImVec2(ImGui::GetContentRegionAvail().x, 60));
 
         ImGui::End();
 
         // Rysowanie celownika (crosshair) na środku ekranu
         ImDrawList* drawList = ImGui::GetBackgroundDrawList();
-        ImVec2 center = ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
-        float crosshairSize = 8.0f;
+        auto center          = ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
+        float crosshairSize  = 8.0f;
         ImU32 crosshairColor = IM_COL32(255, 255, 255, 200);
-        float thickness = 2.0f;
+        float thickness      = 2.0f;
 
         drawList->AddLine(ImVec2(center.x - crosshairSize, center.y), ImVec2(center.x + crosshairSize, center.y),
                           crosshairColor, thickness);
@@ -328,15 +307,17 @@ void VoxelEngine::mainLoop()
         if (!m_cursorEnabled)
         {
             m_camera->update(deltaTime);
-            
-            if (m_clickCooldown > 0.0f) {
-                m_clickCooldown -= deltaTime;
-            } else {
-                bool leftClick = Input::isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT);
+
+            if (m_clickCooldown > 0.0f) { m_clickCooldown -= deltaTime; }
+            else
+            {
+                bool leftClick  = Input::isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT);
                 bool rightClick = Input::isMouseButtonPressed(GLFW_MOUSE_BUTTON_RIGHT);
-                
-                if (leftClick || rightClick) {
-                    m_world->processPlayerInteraction(m_camera->getPosition(), m_camera->getFront(), leftClick, rightClick);
+
+                if (leftClick || rightClick)
+                {
+                    m_world->processPlayerInteraction(m_camera->getPosition(), m_camera->getFront(), leftClick,
+                                                      rightClick);
                     m_clickCooldown = 0.2f;
                 }
             }

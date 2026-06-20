@@ -1,6 +1,7 @@
 #pragma once
-#include <vulkan/vulkan.h>
 #include <string>
+
+#include <vulkan/vulkan.h>
 
 class Shader
 {
@@ -8,7 +9,7 @@ public:
     Shader(VkDevice device, const std::string& filePath);
     ~Shader();
 
-    Shader(const Shader&) = delete;
+    Shader(const Shader&)            = delete;
     Shader& operator=(const Shader&) = delete;
 
     Shader(Shader&& other) noexcept;

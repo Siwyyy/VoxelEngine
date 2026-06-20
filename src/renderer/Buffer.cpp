@@ -1,14 +1,15 @@
 #include "Buffer.h"
-#include <stdexcept>
-#include <cstring>
 
-Buffer::Buffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
+#include <cstring>
+#include <stdexcept>
+
+Buffer::Buffer(const VmaAllocator allocator, const VkDeviceSize size, const VkBufferUsageFlags usage, const VmaMemoryUsage memoryUsage)
     : m_allocator(allocator)
 {
     VkBufferCreateInfo bufferInfo{};
-    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    bufferInfo.size = size;
-    bufferInfo.usage = usage;
+    bufferInfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size        = size;
+    bufferInfo.usage       = usage;
     bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
     VmaAllocationCreateInfo allocInfo{};
@@ -28,7 +29,7 @@ Buffer::~Buffer()
     }
 }
 
-void Buffer::copyData(const void* data, VkDeviceSize size)
+void Buffer::copyData(const void* data, const VkDeviceSize size) const
 {
     void* mappedData;
     vmaMapMemory(m_allocator, m_allocation, &mappedData);

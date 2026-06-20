@@ -2,20 +2,21 @@
 
 Input* Input::s_instance = nullptr;
 
-GLFWInput::GLFWInput(GLFWwindow* window) : m_window(window)
+GLFWInput::GLFWInput(GLFWwindow* window)
+    : m_window(window)
 {
     s_instance = this;
 }
 
-bool GLFWInput::isKeyPressedImpl(int32_t keycode) const
+bool GLFWInput::isKeyPressedImpl(const int32_t keycode) const
 {
-    auto state = glfwGetKey(m_window, keycode);
+    const auto state = glfwGetKey(m_window, keycode);
     return state == GLFW_PRESS || state == GLFW_REPEAT;
 }
 
-bool GLFWInput::isMouseButtonPressedImpl(int32_t button) const
+bool GLFWInput::isMouseButtonPressedImpl(const int32_t button) const
 {
-    auto state = glfwGetMouseButton(m_window, button);
+    const auto state = glfwGetMouseButton(m_window, button);
     return state == GLFW_PRESS;
 }
 

@@ -111,7 +111,7 @@ public:
     /// <summary>
     /// Create new FastNoise object with optional seed
     /// </summary>
-    FastNoiseLite(int seed = 1337)
+    FastNoiseLite(const int seed = 1337)
     {
         mSeed = seed;
         mFrequency = 0.01f;
@@ -143,7 +143,7 @@ public:
     /// <remarks>
     /// Default: 1337
     /// </remarks>
-    void SetSeed(int seed) { mSeed = seed; }
+    void SetSeed(const int seed) { mSeed = seed; }
 
     /// <summary>
     /// Sets frequency for all noise types
@@ -151,7 +151,7 @@ public:
     /// <remarks>
     /// Default: 0.01
     /// </remarks>
-    void SetFrequency(float frequency) { mFrequency = frequency; }
+    void SetFrequency(const float frequency) { mFrequency = frequency; }
 
     /// <summary>
     /// Sets noise algorithm used for GetNoise(...)
@@ -159,7 +159,7 @@ public:
     /// <remarks>
     /// Default: OpenSimplex2
     /// </remarks>
-    void SetNoiseType(NoiseType noiseType)
+    void SetNoiseType(const NoiseType noiseType)
     {
         mNoiseType = noiseType;
         UpdateTransformType3D();
@@ -172,7 +172,7 @@ public:
     /// <remarks>
     /// Default: None
     /// </remarks>
-    void SetRotationType3D(RotationType3D rotationType3D)
+    void SetRotationType3D(const RotationType3D rotationType3D)
     {
         mRotationType3D = rotationType3D;
         UpdateTransformType3D();
@@ -186,7 +186,7 @@ public:
     /// Default: None
     /// Note: FractalType_DomainWarp... only affects DomainWarp(...)
     /// </remarks>
-    void SetFractalType(FractalType fractalType) { mFractalType = fractalType; }
+    void SetFractalType(const FractalType fractalType) { mFractalType = fractalType; }
 
     /// <summary>
     /// Sets octave count for all fractal noise types 
@@ -194,7 +194,7 @@ public:
     /// <remarks>
     /// Default: 3
     /// </remarks>
-    void SetFractalOctaves(int octaves)
+    void SetFractalOctaves(const int octaves)
     {
         mOctaves = octaves;
         CalculateFractalBounding();
@@ -206,7 +206,7 @@ public:
     /// <remarks>
     /// Default: 2.0
     /// </remarks>
-    void SetFractalLacunarity(float lacunarity) { mLacunarity = lacunarity; }
+    void SetFractalLacunarity(const float lacunarity) { mLacunarity = lacunarity; }
 
     /// <summary>
     /// Sets octave gain for all fractal noise types
@@ -214,7 +214,7 @@ public:
     /// <remarks>
     /// Default: 0.5
     /// </remarks>
-    void SetFractalGain(float gain)
+    void SetFractalGain(const float gain)
     {
         mGain = gain;
         CalculateFractalBounding();
@@ -227,7 +227,7 @@ public:
     /// Default: 0.0
     /// Note: Keep between 0...1 to maintain -1...1 output bounding
     /// </remarks>
-    void SetFractalWeightedStrength(float weightedStrength) { mWeightedStrength = weightedStrength; }
+    void SetFractalWeightedStrength(const float weightedStrength) { mWeightedStrength = weightedStrength; }
 
     /// <summary>
     /// Sets strength of the fractal ping pong effect
@@ -235,7 +235,7 @@ public:
     /// <remarks>
     /// Default: 2.0
     /// </remarks>
-    void SetFractalPingPongStrength(float pingPongStrength) { mPingPongStrength = pingPongStrength; }
+    void SetFractalPingPongStrength(const float pingPongStrength) { mPingPongStrength = pingPongStrength; }
 
 
     /// <summary>
@@ -244,7 +244,7 @@ public:
     /// <remarks>
     /// Default: Distance
     /// </remarks>
-    void SetCellularDistanceFunction(CellularDistanceFunction cellularDistanceFunction) { mCellularDistanceFunction = cellularDistanceFunction; }
+    void SetCellularDistanceFunction(const CellularDistanceFunction cellularDistanceFunction) { mCellularDistanceFunction = cellularDistanceFunction; }
 
     /// <summary>
     /// Sets return type from cellular noise calculations
@@ -252,7 +252,7 @@ public:
     /// <remarks>
     /// Default: EuclideanSq
     /// </remarks>
-    void SetCellularReturnType(CellularReturnType cellularReturnType) { mCellularReturnType = cellularReturnType; }
+    void SetCellularReturnType(const CellularReturnType cellularReturnType) { mCellularReturnType = cellularReturnType; }
 
     /// <summary>
     /// Sets the maximum distance a cellular point can move from it's grid position
@@ -261,7 +261,7 @@ public:
     /// Default: 1.0
     /// Note: Setting this higher than 1 will cause artifacts
     /// </remarks> 
-    void SetCellularJitter(float cellularJitter) { mCellularJitterModifier = cellularJitter; }
+    void SetCellularJitter(const float cellularJitter) { mCellularJitterModifier = cellularJitter; }
 
 
     /// <summary>
@@ -270,7 +270,7 @@ public:
     /// <remarks>
     /// Default: OpenSimplex2
     /// </remarks>
-    void SetDomainWarpType(DomainWarpType domainWarpType)
+    void SetDomainWarpType(const DomainWarpType domainWarpType)
     {
         mDomainWarpType = domainWarpType;
         UpdateWarpTransformType3D();
@@ -283,7 +283,7 @@ public:
     /// <remarks>
     /// Default: 1.0
     /// </remarks>
-    void SetDomainWarpAmp(float domainWarpAmp) { mDomainWarpAmp = domainWarpAmp; }
+    void SetDomainWarpAmp(const float domainWarpAmp) { mDomainWarpAmp = domainWarpAmp; }
 
 
     /// <summary>
@@ -438,13 +438,13 @@ private:
         static const T RandVecs3D[];
     };
 
-    static float FastMin(float a, float b) { return a < b ? a : b; }
+    static float FastMin(const float a, const float b) { return a < b ? a : b; }
 
-    static float FastMax(float a, float b) { return a > b ? a : b; }
+    static float FastMax(const float a, const float b) { return a > b ? a : b; }
 
-    static float FastAbs(float f) { return f < 0 ? -f : f; }
+    static float FastAbs(const float f) { return f < 0 ? -f : f; }
 
-    static float FastSqrt(float f) { return sqrtf(f); }
+    static float FastSqrt(const float f) { return sqrtf(f); }
 
     template <typename FNfloat>
     static int FastFloor(FNfloat f) { return f >= 0 ? (int)f : (int)f - 1; }
@@ -452,13 +452,13 @@ private:
     template <typename FNfloat>
     static int FastRound(FNfloat f) { return f >= 0 ? (int)(f + 0.5f) : (int)(f - 0.5f); }
 
-    static float Lerp(float a, float b, float t) { return a + t * (b - a); }
+    static float Lerp(const float a, const float b, const float t) { return a + t * (b - a); }
 
-    static float InterpHermite(float t) { return t * t * (3 - 2 * t); }
+    static float InterpHermite(const float t) { return t * t * (3 - 2 * t); }
 
-    static float InterpQuintic(float t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+    static float InterpQuintic(const float t) { return t * t * t * (t * (t * 6 - 15) + 10); }
 
-    static float CubicLerp(float a, float b, float c, float d, float t)
+    static float CubicLerp(const float a, const float b, const float c, const float d, const float t)
     {
         float p = (d - c) - (a - b);
         return t * t * t * p + t * t * ((a - b) - p) + t * (c - a) + b;
@@ -488,7 +488,7 @@ private:
     static const int PrimeY = 1136930381;
     static const int PrimeZ = 1720413743;
 
-    static int Hash(int seed, int xPrimed, int yPrimed)
+    static int Hash(const int seed, const int xPrimed, const int yPrimed)
     {
         int hash = seed ^ xPrimed ^ yPrimed;
 
@@ -497,7 +497,7 @@ private:
     }
 
 
-    static int Hash(int seed, int xPrimed, int yPrimed, int zPrimed)
+    static int Hash(const int seed, const int xPrimed, const int yPrimed, const int zPrimed)
     {
         int hash = seed ^ xPrimed ^ yPrimed ^ zPrimed;
 
@@ -506,7 +506,7 @@ private:
     }
 
 
-    static float ValCoord(int seed, int xPrimed, int yPrimed)
+    static float ValCoord(const int seed, const int xPrimed, const int yPrimed)
     {
         int hash = Hash(seed, xPrimed, yPrimed);
 
@@ -516,7 +516,7 @@ private:
     }
 
 
-    static float ValCoord(int seed, int xPrimed, int yPrimed, int zPrimed)
+    static float ValCoord(const int seed, const int xPrimed, const int yPrimed, const int zPrimed)
     {
         int hash = Hash(seed, xPrimed, yPrimed, zPrimed);
 
@@ -526,7 +526,7 @@ private:
     }
 
 
-    float GradCoord(int seed, int xPrimed, int yPrimed, float xd, float yd) const
+    float GradCoord(const int seed, const int xPrimed, const int yPrimed, const float xd, const float yd) const
     {
         int hash = Hash(seed, xPrimed, yPrimed);
         hash ^= hash >> 15;
@@ -539,7 +539,7 @@ private:
     }
 
 
-    float GradCoord(int seed, int xPrimed, int yPrimed, int zPrimed, float xd, float yd, float zd) const
+    float GradCoord(const int seed, const int xPrimed, const int yPrimed, const int zPrimed, const float xd, const float yd, const float zd) const
     {
         int hash = Hash(seed, xPrimed, yPrimed, zPrimed);
         hash ^= hash >> 15;
@@ -553,7 +553,7 @@ private:
     }
 
 
-    void GradCoordOut(int seed, int xPrimed, int yPrimed, float& xo, float& yo) const
+    void GradCoordOut(const int seed, const int xPrimed, const int yPrimed, float& xo, float& yo) const
     {
         int hash = Hash(seed, xPrimed, yPrimed) & (255 << 1);
 
@@ -562,7 +562,7 @@ private:
     }
 
 
-    void GradCoordOut(int seed, int xPrimed, int yPrimed, int zPrimed, float& xo, float& yo, float& zo) const
+    void GradCoordOut(const int seed, const int xPrimed, const int yPrimed, const int zPrimed, float& xo, float& yo, float& zo) const
     {
         int hash = Hash(seed, xPrimed, yPrimed, zPrimed) & (255 << 2);
 
@@ -572,7 +572,7 @@ private:
     }
 
 
-    void GradCoordDual(int seed, int xPrimed, int yPrimed, float xd, float yd, float& xo, float& yo) const
+    void GradCoordDual(const int seed, const int xPrimed, const int yPrimed, const float xd, const float yd, float& xo, float& yo) const
     {
         int hash = Hash(seed, xPrimed, yPrimed);
         int index1 = hash & (127 << 1);
@@ -590,7 +590,7 @@ private:
     }
 
 
-    void GradCoordDual(int seed, int xPrimed, int yPrimed, int zPrimed, float xd, float yd, float zd, float& xo, float& yo, float& zo) const
+    void GradCoordDual(const int seed, const int xPrimed, const int yPrimed, const int zPrimed, const float xd, const float yd, const float zd, float& xo, float& yo, float& zo) const
     {
         int hash = Hash(seed, xPrimed, yPrimed, zPrimed);
         int index1 = hash & (63 << 2);
@@ -980,7 +980,7 @@ private:
     // Simplex/OpenSimplex2 Noise
 
     template <typename FNfloat>
-    float SingleSimplex(int seed, FNfloat x, FNfloat y) const
+    float SingleSimplex(const int seed, FNfloat x, FNfloat y) const
     {
         // 2D OpenSimplex2 case uses the same algorithm as ordinary Simplex.
 
@@ -1153,7 +1153,7 @@ private:
     // OpenSimplex2S Noise
 
     template <typename FNfloat>
-    float SingleOpenSimplex2S(int seed, FNfloat x, FNfloat y) const
+    float SingleOpenSimplex2S(const int seed, FNfloat x, FNfloat y) const
     {
         // 2D OpenSimplex2S case is a modified 2D simplex noise.
 
@@ -1480,7 +1480,7 @@ private:
     // Cellular Noise
 
     template <typename FNfloat>
-    float SingleCellular(int seed, FNfloat x, FNfloat y) const
+    float SingleCellular(const int seed, FNfloat x, FNfloat y) const
     {
         int xr = FastRound(x);
         int yr = FastRound(y);
@@ -1610,7 +1610,7 @@ private:
     }
 
     template <typename FNfloat>
-    float SingleCellular(int seed, FNfloat x, FNfloat y, FNfloat z) const
+    float SingleCellular(const int seed, FNfloat x, FNfloat y, FNfloat z) const
     {
         int xr = FastRound(x);
         int yr = FastRound(y);
@@ -1767,7 +1767,7 @@ private:
     // Perlin Noise
 
     template <typename FNfloat>
-    float SinglePerlin(int seed, FNfloat x, FNfloat y) const
+    float SinglePerlin(const int seed, FNfloat x, FNfloat y) const
     {
         int x0 = FastFloor(x);
         int y0 = FastFloor(y);
@@ -1792,7 +1792,7 @@ private:
     }
 
     template <typename FNfloat>
-    float SinglePerlin(int seed, FNfloat x, FNfloat y, FNfloat z) const
+    float SinglePerlin(const int seed, FNfloat x, FNfloat y, FNfloat z) const
     {
         int x0 = FastFloor(x);
         int y0 = FastFloor(y);
@@ -1831,7 +1831,7 @@ private:
     // Value Cubic Noise
 
     template <typename FNfloat>
-    float SingleValueCubic(int seed, FNfloat x, FNfloat y) const
+    float SingleValueCubic(const int seed, FNfloat x, FNfloat y) const
     {
         int x1 = FastFloor(x);
         int y1 = FastFloor(y);
@@ -1861,7 +1861,7 @@ private:
     }
 
     template <typename FNfloat>
-    float SingleValueCubic(int seed, FNfloat x, FNfloat y, FNfloat z) const
+    float SingleValueCubic(const int seed, FNfloat x, FNfloat y, FNfloat z) const
     {
         int x1 = FastFloor(x);
         int y1 = FastFloor(y);
@@ -1918,7 +1918,7 @@ private:
     // Value Noise
 
     template <typename FNfloat>
-    float SingleValue(int seed, FNfloat x, FNfloat y) const
+    float SingleValue(const int seed, FNfloat x, FNfloat y) const
     {
         int x0 = FastFloor(x);
         int y0 = FastFloor(y);
@@ -1938,7 +1938,7 @@ private:
     }
 
     template <typename FNfloat>
-    float SingleValue(int seed, FNfloat x, FNfloat y, FNfloat z) const
+    float SingleValue(const int seed, FNfloat x, FNfloat y, FNfloat z) const
     {
         int x0 = FastFloor(x);
         int y0 = FastFloor(y);
@@ -2131,7 +2131,7 @@ private:
     // Domain Warp Basic Grid
 
     template <typename FNfloat>
-    void SingleDomainWarpBasicGrid(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat& xr, FNfloat& yr) const
+    void SingleDomainWarpBasicGrid(const int seed, const float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat& xr, FNfloat& yr) const
     {
         FNfloat xf = x * frequency;
         FNfloat yf = y * frequency;
@@ -2164,7 +2164,7 @@ private:
     }
 
     template <typename FNfloat>
-    void SingleDomainWarpBasicGrid(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat z, FNfloat& xr, FNfloat& yr, FNfloat& zr) const
+    void SingleDomainWarpBasicGrid(const int seed, const float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat z, FNfloat& xr, FNfloat& yr, FNfloat& zr) const
     {
         FNfloat xf = x * frequency;
         FNfloat yf = y * frequency;
@@ -2226,7 +2226,7 @@ private:
     // Domain Warp Simplex/OpenSimplex2
 
     template <typename FNfloat>
-    void SingleDomainWarpSimplexGradient(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat& xr, FNfloat& yr, bool outGradOnly) const
+    void SingleDomainWarpSimplexGradient(const int seed, const float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat& xr, FNfloat& yr, const bool outGradOnly) const
     {
         const float SQRT3 = 1.7320508075688772935274463415059f;
         const float G2 = (3 - SQRT3) / 6;
@@ -2324,7 +2324,7 @@ private:
     }
 
     template <typename FNfloat>
-    void SingleDomainWarpOpenSimplex2Gradient(int seed, float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat z, FNfloat& xr, FNfloat& yr, FNfloat& zr, bool outGradOnly) const
+    void SingleDomainWarpOpenSimplex2Gradient(int seed, const float warpAmp, float frequency, FNfloat x, FNfloat y, FNfloat z, FNfloat& xr, FNfloat& yr, FNfloat& zr, const bool outGradOnly) const
     {
         x *= frequency;
         y *= frequency;

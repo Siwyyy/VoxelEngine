@@ -1,5 +1,6 @@
-#include "core/VoxelEngine.h"
 #include <iostream>
+
+#include "core/VoxelEngine.h"
 
 int main()
 {
