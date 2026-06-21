@@ -21,40 +21,29 @@ endif ()
 # Find Vulkan package
 find_package(Vulkan REQUIRED)
 
-# Set directories for GLFW, ImGui, and VMA
+# Set external dependencies directories
 set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glfw)
-set(VMA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/vma)
 
-# Set project source files
-file(GLOB_RECURSE SOURCES "src/*.cpp" "src/*.h")
+# Gather source files
+file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp" "src/*.h")
+
 add_subdirectory(vendor EXCLUDE_FROM_ALL)
 add_executable(${PROJECT_NAME} ${SOURCES})
 
-# Fetch GLM library
-include(FetchContent)
-set(CMAKE_POLICY_VERSION_MINIMUM 3.5)
-FetchContent_Declare(
-        glm
-        GIT_REPOSITORY https://github.com/g-truc/glm.git
-        GIT_TAG 0.9.9.8
-)
-FetchContent_MakeAvailable(glm)
-
-# Include directories and link libraries
+# Configure include paths
 target_include_directories(${PROJECT_NAME} PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
         ${Vulkan_INCLUDE_DIRS}
         ${GLFW_DIR}/include
-        ${VMA_DIR}/include
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor
 )
 
+# Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
         Vulkan::Vulkan
         ${GLFW_DIR}/lib/glfw3.lib
-        glm::glm
         ImGui
 )
 
