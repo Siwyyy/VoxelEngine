@@ -1,0 +1,11 @@
+{
+  "languages": [
+    "mermaid",
+    "mermaid-beautiful",
+    "beautiful-mermaid",
+    "bmmd"
+  ],
+  "minReadableHeight": 260,
+  "fitToWidth": true,
+  "theme": "github-dark"
+}
