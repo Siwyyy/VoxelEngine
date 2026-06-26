@@ -20,23 +20,23 @@ public:
     explicit World(VulkanContext* context);
     World(const World&)     = delete;
     World(World&&) noexcept = delete;
-    ~World();
+    ~World() noexcept;
     World& operator=(const World&)     = delete;
     World& operator=(World&&) noexcept = delete;
 
     void update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, float deltaTime);
+    void processPlayerInteraction(const glm::vec3& cameraPos, const glm::vec3& cameraFront, bool leftClick, bool rightClick);
+
     void changeWorld(const std::string& newPath);
     [[nodiscard]] const std::string& getWorldPath() const { return m_worldPath; }
 
+    void setRenderDistance(int distance) { m_renderDistance = distance; }
     [[nodiscard]] int getRenderDistance() const { return m_renderDistance; }
-    void setRenderDistance(const int distance) { m_renderDistance = distance; }
+
+    void setBlockAt(int x, int y, int z, Block block);
+    [[nodiscard]] Block getBlockAt(int x, int y, int z) const;
 
     void saveAllChunks() const;
-
-    void processPlayerInteraction(const glm::vec3& cameraPos, const glm::vec3& cameraFront, bool leftClick, bool rightClick);
-    [[nodiscard]] Block getBlockAt(int x, int y, int z) const;
-    void setBlockAt(int x, int y, int z, Block block);
-
     [[nodiscard]] const std::vector<Chunk*>& getActiveChunks() const { return m_activeChunks; }
 
 private:

@@ -4,7 +4,7 @@
 
 #include "utils/FileSystem.h"
 
-Shader::Shader(const VkDevice device, const std::string& filePath)
+Shader::Shader(VkDevice device, const std::string& filePath)
     : m_device(device)
 {
     const auto code = FileSystem::readFile(filePath);

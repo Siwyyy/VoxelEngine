@@ -1,22 +1,17 @@
 #pragma once
 
 // C++ Standard Library
+#include <array>
 #include <iostream>
 #include <memory>
-#include <string>
-#include <vector>
-#include <stdexcept>
 #include <optional>
 #include <set>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
-// Vulkan
-#include <vulkan/vulkan.h>
-
-// GLM
+// Vendor
 #include <glm/glm.hpp>
-
-// VMA
-#include <vk_mem_alloc.h>
-
-// ImGui
-#include <imgui.h>
+#include <imgui/imgui.h>
+#include <vma/vk_mem_alloc.h>
+#include <vulkan/vulkan.h>

@@ -1,6 +1,7 @@
 #include "VulkanContext.h"
 
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <iostream>
 #include <limits>
@@ -21,8 +22,9 @@
 
 namespace
 {
-    VkResult createDebugUtilsMessengerEXT(const VkInstance instance,
+    VkResult createDebugUtilsMessengerEXT(VkInstance instance,
                                           const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
+                                          // ReSharper disable once CppDFAConstantParameter
                                           const VkAllocationCallbacks* pAllocator,
                                           VkDebugUtilsMessengerEXT* pDebugMessenger)
     {
@@ -35,7 +37,8 @@ namespace
         return VK_ERROR_EXTENSION_NOT_PRESENT;
     }
 
-    void destroyDebugUtilsMessengerEXT(const VkInstance instance, const VkDebugUtilsMessengerEXT debugMessenger,
+    void destroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger,
+                                       // ReSharper disable once CppDFAConstantParameter
                                        const VkAllocationCallbacks* pAllocator)
     {
         if (const auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
@@ -102,7 +105,7 @@ void VulkanContext::cleanup()
 
     vkDeviceWaitIdle(m_device);
 
-    for (const VkSemaphore semaphore: m_renderFinishedSemaphores)
+    for (const auto semaphore: m_renderFinishedSemaphores)
     {
         vkDestroySemaphore(m_device, semaphore, nullptr);
     }
@@ -164,8 +167,8 @@ void VulkanContext::drawFrame(const glm::mat4& viewMatrix, const std::vector<Chu
 
     if (!m_firstFrame[m_currentFrame])
     {
-        uint64_t timestamps[2];
-        if (vkGetQueryPoolResults(m_device, m_queryPool, m_currentFrame * 2, 2, sizeof(timestamps), timestamps,
+        std::array<uint64_t, 2> timestamps{};
+        if (vkGetQueryPoolResults(m_device, m_queryPool, m_currentFrame * 2, 2, timestamps.size() * sizeof(uint64_t), timestamps.data(),
                                   sizeof(uint64_t), VK_QUERY_RESULT_64_BIT) == VK_SUCCESS)
         {
             m_gpuFrameTime = static_cast<float>(timestamps[1] - timestamps[0]) * m_timestampPeriod * 1e-6f;
@@ -185,18 +188,18 @@ void VulkanContext::drawFrame(const glm::mat4& viewMatrix, const std::vector<Chu
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    const VkSemaphore waitSemaphores[]      = {m_imageAvailableSemaphores[m_currentFrame]};
-    const VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-    submitInfo.waitSemaphoreCount           = 1;
-    submitInfo.pWaitSemaphores              = waitSemaphores;
-    submitInfo.pWaitDstStageMask            = waitStages;
+    const std::array<VkSemaphore, 1> waitSemaphores          = {m_imageAvailableSemaphores[m_currentFrame]};
+    constexpr std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    submitInfo.waitSemaphoreCount               = 1;
+    submitInfo.pWaitSemaphores                  = waitSemaphores.data();
+    submitInfo.pWaitDstStageMask                = waitStages.data();
 
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers    = &m_commandBuffers[m_currentFrame];
 
-    const VkSemaphore signalSemaphores[] = {m_renderFinishedSemaphores[imageIndex]};
+    const std::array<VkSemaphore, 1> signalSemaphores = {m_renderFinishedSemaphores[imageIndex]};
     submitInfo.signalSemaphoreCount      = 1;
-    submitInfo.pSignalSemaphores         = signalSemaphores;
+    submitInfo.pSignalSemaphores         = signalSemaphores.data();
 
     if (vkQueueSubmit(m_graphicsQueue, 1, &submitInfo, m_inFlightFences[m_currentFrame]) != VK_SUCCESS)
     {
@@ -207,11 +210,11 @@ void VulkanContext::drawFrame(const glm::mat4& viewMatrix, const std::vector<Chu
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
 
     presentInfo.waitSemaphoreCount = 1;
-    presentInfo.pWaitSemaphores    = signalSemaphores;
+    presentInfo.pWaitSemaphores    = signalSemaphores.data();
 
-    const VkSwapchainKHR swapchains[] = {m_swapchain};
+    const std::array<VkSwapchainKHR, 1> swapchains = {m_swapchain};
     presentInfo.swapchainCount        = 1;
-    presentInfo.pSwapchains           = swapchains;
+    presentInfo.pSwapchains           = swapchains.data();
 
     presentInfo.pImageIndices = &imageIndex;
 
@@ -258,16 +261,19 @@ void VulkanContext::cleanupImGui()
     ImGui::DestroyContext();
 }
 
-void VulkanContext::renderImGui(const VkCommandBuffer commandBuffer)
+void VulkanContext::renderImGui(VkCommandBuffer commandBuffer)
 {
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
 void VulkanContext::createInstance()
 {
-    if (ENABLE_VALIDATION_LAYERS && !checkValidationLayerSupport())
+    if constexpr (ENABLE_VALIDATION_LAYERS)
     {
-        throw std::runtime_error("Validation layers requested, but not available!");
+        if (!checkValidationLayerSupport())
+        {
+            throw std::runtime_error("Validation layers requested, but not available!");
+        }
     }
 
     VkApplicationInfo appInfo{};
@@ -287,18 +293,13 @@ void VulkanContext::createInstance()
     createInfo.ppEnabledExtensionNames = extensions.data();
 
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{};
-    if (ENABLE_VALIDATION_LAYERS)
+    if constexpr (ENABLE_VALIDATION_LAYERS)
     {
         createInfo.enabledLayerCount   = static_cast<uint32_t>(VALIDATION_LAYERS.size());
         createInfo.ppEnabledLayerNames = VALIDATION_LAYERS.data();
 
         populateDebugMessengerCreateInfo(debugCreateInfo);
-        createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
-    }
-    else
-    {
-        createInfo.enabledLayerCount = 0;
-        createInfo.pNext             = nullptr;
+        createInfo.pNext = &debugCreateInfo;
     }
 
     if (vkCreateInstance(&createInfo, nullptr, &m_instance) != VK_SUCCESS)
@@ -363,10 +364,10 @@ void VulkanContext::pickPhysicalDevice()
 
 void VulkanContext::createLogicalDevice()
 {
-    QueueFamilyIndices indices = findQueueFamilies(m_physicalDevice);
+    auto [graphicsFamily, presentFamily] = findQueueFamilies(m_physicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set uniqueQueueFamilies = {indices.graphicsFamily.value_or(0), indices.presentFamily.value_or(0)};
+    std::set uniqueQueueFamilies = {graphicsFamily.value_or(0), presentFamily.value_or(0)};
 
     float queuePriority = 1.0f;
     for (uint32_t queueFamily: uniqueQueueFamilies)
@@ -405,8 +406,8 @@ void VulkanContext::createLogicalDevice()
         throw std::runtime_error("Failed to create logical device!");
     }
 
-    vkGetDeviceQueue(m_device, indices.graphicsFamily.value_or(0), 0, &m_graphicsQueue);
-    vkGetDeviceQueue(m_device, indices.presentFamily.value_or(0), 0, &m_presentQueue);
+    vkGetDeviceQueue(m_device, graphicsFamily.value_or(0), 0, &m_graphicsQueue);
+    vkGetDeviceQueue(m_device, presentFamily.value_or(0), 0, &m_presentQueue);
 
     VmaAllocatorCreateInfo allocatorInfo = {};
     allocatorInfo.physicalDevice         = m_physicalDevice;
@@ -421,16 +422,16 @@ void VulkanContext::createLogicalDevice()
 
 void VulkanContext::createSwapchain(GLFWwindow* window)
 {
-    const SwapChainSupportDetails swapChainSupport = querySwapChainSupport(m_physicalDevice);
+    const auto [capabilities, formats, presentModes] = querySwapChainSupport(m_physicalDevice);
 
-    const VkSurfaceFormatKHR surfaceFormat = chooseSwapSurfaceFormat(swapChainSupport.formats);
-    const VkPresentModeKHR presentMode     = chooseSwapPresentMode(swapChainSupport.presentModes);
-    const VkExtent2D extent                = chooseSwapExtent(swapChainSupport.capabilities, window);
+    const auto [format, colorSpace]    = chooseSwapSurfaceFormat(formats);
+    const VkPresentModeKHR presentMode = chooseSwapPresentMode(presentModes);
+    const VkExtent2D extent            = chooseSwapExtent(capabilities, window);
 
-    uint32_t imageCount = swapChainSupport.capabilities.minImageCount + 1;
-    if (swapChainSupport.capabilities.maxImageCount > 0 && imageCount > swapChainSupport.capabilities.maxImageCount)
+    uint32_t imageCount = capabilities.minImageCount + 1;
+    if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount)
     {
-        imageCount = swapChainSupport.capabilities.maxImageCount;
+        imageCount = capabilities.maxImageCount;
     }
 
     VkSwapchainCreateInfoKHR createInfo{};
@@ -438,27 +439,27 @@ void VulkanContext::createSwapchain(GLFWwindow* window)
     createInfo.surface = m_surface;
 
     createInfo.minImageCount    = imageCount;
-    createInfo.imageFormat      = surfaceFormat.format;
-    createInfo.imageColorSpace  = surfaceFormat.colorSpace;
+    createInfo.imageFormat      = format;
+    createInfo.imageColorSpace  = colorSpace;
     createInfo.imageExtent      = extent;
     createInfo.imageArrayLayers = 1;
     createInfo.imageUsage       = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 
     const QueueFamilyIndices indices    = findQueueFamilies(m_physicalDevice);
-    const uint32_t queueFamilyIndices[] = {indices.graphicsFamily.value_or(0), indices.presentFamily.value_or(0)};
+    const std::array<uint32_t, 2> queueFamilyIndices = {indices.graphicsFamily.value_or(0), indices.presentFamily.value_or(0)};
 
     if (indices.graphicsFamily != indices.presentFamily)
     {
         createInfo.imageSharingMode      = VK_SHARING_MODE_CONCURRENT;
         createInfo.queueFamilyIndexCount = 2;
-        createInfo.pQueueFamilyIndices   = queueFamilyIndices;
+        createInfo.pQueueFamilyIndices   = queueFamilyIndices.data();
     }
     else
     {
         createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
     }
 
-    createInfo.preTransform   = swapChainSupport.capabilities.currentTransform;
+    createInfo.preTransform   = capabilities.currentTransform;
     createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
     createInfo.presentMode    = presentMode;
     createInfo.clipped        = VK_TRUE;
@@ -473,7 +474,7 @@ void VulkanContext::createSwapchain(GLFWwindow* window)
     m_swapchainImages.resize(imageCount);
     vkGetSwapchainImagesKHR(m_device, m_swapchain, &imageCount, m_swapchainImages.data());
 
-    m_swapchainImageFormat = surfaceFormat.format;
+    m_swapchainImageFormat = format;
     m_swapchainExtent      = extent;
 }
 
@@ -740,9 +741,9 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     vkCmdPushConstants(commandBuffer, m_graphicsPipeline->getLayout(), VK_SHADER_STAGE_VERTEX_BIT, 0,
                        sizeof(glm::mat4), &mvp);
 
-    VkBuffer vertexBuffers[] = {m_megaVertexBuffer->getBuffer()};
-    VkDeviceSize offsets[]   = {0};
-    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+    std::array<VkBuffer, 1> vertexBuffers = {m_megaVertexBuffer->getBuffer()};
+    std::array<VkDeviceSize, 1> offsets   = {0};
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers.data(), offsets.data());
     vkCmdBindIndexBuffer(commandBuffer, m_megaIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
     m_drawnChunksCount = 0;
@@ -799,7 +800,7 @@ void VulkanContext::recordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t 
     }
 }
 
-bool VulkanContext::isDeviceSuitable(const VkPhysicalDevice device) const
+bool VulkanContext::isDeviceSuitable(VkPhysicalDevice device) const
 {
     const QueueFamilyIndices indices = findQueueFamilies(device);
     const bool extensionsSupported   = checkDeviceExtensionSupport(device);
@@ -819,7 +820,7 @@ bool VulkanContext::isDeviceSuitable(const VkPhysicalDevice device) const
     return indices.isComplete() && extensionsSupported && swapChainAdequate && supportsVulkan13;
 }
 
-bool VulkanContext::checkDeviceExtensionSupport(const VkPhysicalDevice device) const
+bool VulkanContext::checkDeviceExtensionSupport(VkPhysicalDevice device)
 {
     uint32_t extensionCount;
     vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
@@ -837,7 +838,7 @@ bool VulkanContext::checkDeviceExtensionSupport(const VkPhysicalDevice device) c
     return requiredExtensions.empty();
 }
 
-QueueFamilyIndices VulkanContext::findQueueFamilies(const VkPhysicalDevice device) const
+QueueFamilyIndices VulkanContext::findQueueFamilies(VkPhysicalDevice device) const
 {
     QueueFamilyIndices indices;
 
@@ -874,7 +875,7 @@ QueueFamilyIndices VulkanContext::findQueueFamilies(const VkPhysicalDevice devic
     return indices;
 }
 
-uint32_t VulkanContext::findMemoryType(const uint32_t typeFilter, const VkMemoryPropertyFlags properties) const
+uint32_t VulkanContext::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const
 {
     VkPhysicalDeviceMemoryProperties memProperties;
     vkGetPhysicalDeviceMemoryProperties(m_physicalDevice, &memProperties);
@@ -889,8 +890,8 @@ uint32_t VulkanContext::findMemoryType(const uint32_t typeFilter, const VkMemory
     throw std::runtime_error("Failed to find suitable memory type!");
 }
 
-VkFormat VulkanContext::findSupportedFormat(const std::vector<VkFormat>& candidates, const VkImageTiling tiling,
-                                            const VkFormatFeatureFlags features) const
+VkFormat VulkanContext::findSupportedFormat(const std::vector<VkFormat>& candidates, VkImageTiling tiling,
+                                            VkFormatFeatureFlags features) const
 {
     for (const VkFormat format: candidates)
     {
@@ -915,7 +916,7 @@ VkFormat VulkanContext::findDepthFormat() const
     );
 }
 
-SwapChainSupportDetails VulkanContext::querySwapChainSupport(const VkPhysicalDevice device) const
+SwapChainSupportDetails VulkanContext::querySwapChainSupport(VkPhysicalDevice device) const
 {
     SwapChainSupportDetails details;
 
@@ -942,7 +943,7 @@ SwapChainSupportDetails VulkanContext::querySwapChainSupport(const VkPhysicalDev
     return details;
 }
 
-VkSurfaceFormatKHR VulkanContext::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats) const
+VkSurfaceFormatKHR VulkanContext::chooseSwapSurfaceFormat(const std::vector<VkSurfaceFormatKHR>& availableFormats)
 {
     for (const auto& availableFormat: availableFormats)
     {
@@ -955,7 +956,7 @@ VkSurfaceFormatKHR VulkanContext::chooseSwapSurfaceFormat(const std::vector<VkSu
     return availableFormats[0];
 }
 
-VkPresentModeKHR VulkanContext::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes) const
+VkPresentModeKHR VulkanContext::chooseSwapPresentMode(const std::vector<VkPresentModeKHR>& availablePresentModes)
 {
     for (const auto& availablePresentMode: availablePresentModes)
     {
@@ -967,7 +968,7 @@ VkPresentModeKHR VulkanContext::chooseSwapPresentMode(const std::vector<VkPresen
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
-VkExtent2D VulkanContext::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) const
+VkExtent2D VulkanContext::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window)
 {
     if (capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
     {
@@ -992,7 +993,7 @@ VkExtent2D VulkanContext::chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capab
     }
 }
 
-bool VulkanContext::checkValidationLayerSupport() const
+bool VulkanContext::checkValidationLayerSupport()
 {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -1022,7 +1023,7 @@ bool VulkanContext::checkValidationLayerSupport() const
     return true;
 }
 
-std::vector<const char*> VulkanContext::getRequiredExtensions() const
+std::vector<const char*> VulkanContext::getRequiredExtensions()
 {
     uint32_t glfwExtensionCount = 0;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -1037,7 +1038,7 @@ std::vector<const char*> VulkanContext::getRequiredExtensions() const
     return extensions;
 }
 
-void VulkanContext::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) const
+void VulkanContext::populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo)
 {
     createInfo                 = {};
     createInfo.sType           = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;

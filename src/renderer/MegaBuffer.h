@@ -7,9 +7,9 @@
 
 struct BlockAllocation
 {
-    uint32_t offset;
-    uint32_t size;
-    bool valid = false;
+    uint32_t offset = 0;
+    uint32_t size   = 0;
+    bool valid      = false;
 };
 
 class MegaBuffer

@@ -1,5 +1,6 @@
 #include "FileSystem.h"
 
+#include <array>
 #include <fstream>
 #include <stdexcept>
 
@@ -10,9 +11,9 @@
 std::filesystem::path FileSystem::getExecutableDir()
 {
 #ifdef _WIN32
-    wchar_t path[MAX_PATH];
-    GetModuleFileNameW(nullptr, path, MAX_PATH);
-    return std::filesystem::path(path).parent_path();
+    std::array<wchar_t, MAX_PATH> path{};
+    GetModuleFileNameW(nullptr, path.data(), path.size());
+    return std::filesystem::path(path.data()).parent_path();
 #else
     // Fallback dla Unix (Linux)
     return std::filesystem::canonical("/proc/self/exe").parent_path();

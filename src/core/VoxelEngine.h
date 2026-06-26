@@ -1,6 +1,5 @@
 #pragma once
 
-#include <chrono>
 #include <future>
 #include <memory>
 #include <string>
@@ -29,8 +28,6 @@ private:
     std::unique_ptr<Camera> m_camera;
     std::unique_ptr<World> m_world;
     VulkanContext m_vulkanContext;
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_lastTime;
 
     float m_clickCooldown      = 0.0f;
     bool m_cursorEnabled       = false;

@@ -36,7 +36,6 @@
 # IDE - Rider / IntelliJ
 
 .idea/
-cmake-build-*/
 
 # IDE - Visual Studio generated files
 
@@ -55,6 +54,8 @@ Release/
 # Build Systems - CMake
 
 build/
+build-*/
+cmake-build-*/
 CMakeCache.txt
 CMakeFiles/
 CMakeScripts/
@@ -73,4 +74,7 @@ Desktop.ini
 # AI - Antigravity
 
 .antigravitycli/
+
+# Obsidian (docs)
 /docs/.obsidian/workspace.json
+/docs/.obsidian/workspace-mobile.json

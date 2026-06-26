@@ -2,8 +2,8 @@
 
 #include <stdexcept>
 
-Window::Window(const uint32_t width, const uint32_t height, const std::string& title)
-    : m_width(width), m_height(height), m_title(title), m_window(nullptr)
+Window::Window(uint32_t width, uint32_t height, std::string title)
+    : m_width(width), m_height(height), m_title(std::move(title)), m_window(nullptr)
 {
     initWindow();
 }
@@ -16,7 +16,6 @@ Window::~Window()
 
 bool Window::shouldClose() const { return glfwWindowShouldClose(m_window); }
 
-void Window::pollEvents() { glfwPollEvents(); }
 
 void Window::initWindow()
 {

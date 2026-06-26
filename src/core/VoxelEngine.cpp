@@ -8,6 +8,7 @@
 #include <imgui/backends/imgui_impl_glfw.h>
 #include <imgui/backends/imgui_impl_vulkan.h>
 
+#include "Time.h"
 #include "input/GLFWInput.h"
 #include "input/KeyCodes.h"
 
@@ -86,12 +87,12 @@ void VoxelEngine::initVulkan()
 
 void VoxelEngine::mainLoop()
 {
-    m_lastTime = std::chrono::high_resolution_clock::now();
+    Time::init();
 
     bool isShuttingDown = false;
     while (true)
     {
-        if (glfwWindowShouldClose(m_window->getGLFWwindow()) && !isShuttingDown)
+        if (glfwWindowShouldClose(m_window->getGLFWwindow()))
         {
             isShuttingDown = true;
             glfwSetWindowShouldClose(m_window->getGLFWwindow(), GLFW_FALSE);
@@ -107,9 +108,9 @@ void VoxelEngine::mainLoop()
             ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
             ImGui::Begin("Saving Screen", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
 
-            auto loadingText = "Saving World, please wait...";
-            ImVec2 textSize  = ImGui::CalcTextSize(loadingText);
-            auto pos         = ImVec2((ImGui::GetIO().DisplaySize.x - textSize.x) * 0.5f,
+            const auto loadingText = "Saving World, please wait...";
+            const ImVec2 textSize  = ImGui::CalcTextSize(loadingText);
+            const auto pos         = ImVec2((ImGui::GetIO().DisplaySize.x - textSize.x) * 0.5f,
                                       (ImGui::GetIO().DisplaySize.y - textSize.y) * 0.5f);
             ImGui::SetCursorPos(pos);
             ImGui::Text("%s", loadingText);
@@ -117,15 +118,13 @@ void VoxelEngine::mainLoop()
 
             ImGui::Render();
 
-            std::vector<Chunk*> emptyChunks;
-            m_vulkanContext.drawFrame(m_camera->getViewMatrix(), emptyChunks);
+            m_vulkanContext.drawFrame(m_camera->getViewMatrix(), {});
 
             break;
         }
 
-        auto currentTime = std::chrono::high_resolution_clock::now();
-        float deltaTime  = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - m_lastTime).count();
-        m_lastTime       = currentTime;
+        Time::tick();
+        const float deltaTime = Time::getDeltaTime();
 
         m_graphUpdateTimer += deltaTime;
         if (m_graphUpdateTimer >= 1.0f / 60.0f)
@@ -151,8 +150,8 @@ void VoxelEngine::mainLoop()
             ImGui::SetNextWindowSize(ImGui::GetIO().DisplaySize);
             ImGui::Begin("Loading Screen", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoBackground);
 
-            auto loadingText = "Loading World...";
-            ImVec2 textSize  = ImGui::CalcTextSize(loadingText);
+            const auto loadingText = "Loading World...";
+            const ImVec2 textSize  = ImGui::CalcTextSize(loadingText);
             auto pos         = ImVec2((ImGui::GetIO().DisplaySize.x - textSize.x) * 0.5f,
                                       (ImGui::GetIO().DisplaySize.y - textSize.y) * 0.5f);
             ImGui::SetCursorPos(pos);
@@ -166,13 +165,13 @@ void VoxelEngine::mainLoop()
 
             switchWorld(m_pendingWorldLoad);
             m_pendingWorldLoad = "";
-            m_lastTime         = std::chrono::high_resolution_clock::now();
+            Time::init();
             continue;
         }
 
         if (Input::isKeyPressed(LAVA_KEY_ESCAPE)) { glfwSetWindowShouldClose(m_window->getGLFWwindow(), GLFW_TRUE); }
 
-        bool tabPressed = Input::isKeyPressed(LAVA_KEY_TAB);
+        const bool tabPressed = Input::isKeyPressed(LAVA_KEY_TAB);
         if (tabPressed && !m_tabPressedLastFrame)
         {
             m_cursorEnabled = !m_cursorEnabled;
@@ -231,13 +230,13 @@ void VoxelEngine::mainLoop()
         int currentRd = m_world->getRenderDistance();
         if (ImGui::SliderInt("Render Distance", &currentRd, 2, 32)) { m_world->setRenderDistance(currentRd); }
 
-        auto activeChunks = m_world->getActiveChunks();
+        const auto& activeChunks = m_world->getActiveChunks();
         ImGui::Text("Active Chunks: %zu", activeChunks.size());
         ImGui::Text("Drawn Chunks: %u", m_vulkanContext.getDrawnChunksCount());
 
         uint32_t totalIndices = 0;
         for (const auto& chunk: activeChunks) { totalIndices += chunk->getIndexCount(); }
-        uint32_t totalVertices = (totalIndices / 6) * 4;
+        const uint32_t totalVertices = (totalIndices / 6) * 4;
 
         ImGui::Text("Total Quads (Faces): %u", totalIndices / 6);
         ImGui::Text("Total Vertices: %u", totalVertices);
@@ -262,9 +261,9 @@ void VoxelEngine::mainLoop()
         }
         ImGui::Separator();
 
-        static char worldNameBuffer[128] = "new_world";
-        ImGui::InputText("New World Name", worldNameBuffer, IM_ARRAYSIZE(worldNameBuffer));
-        if (ImGui::Button("Create / Load World")) { m_pendingWorldLoad = std::string(worldNameBuffer); }
+        static std::array<char, 128> worldNameBuffer = {"new_world"};
+        ImGui::InputText("New World Name", worldNameBuffer.data(), worldNameBuffer.size());
+        if (ImGui::Button("Create / Load World")) { m_pendingWorldLoad = std::string(worldNameBuffer.data()); }
         ImGui::End();
 
         ImGui::SetNextWindowPos(ImVec2(10, 480), ImGuiCond_Once);
@@ -273,8 +272,8 @@ void VoxelEngine::mainLoop()
 
         float avgCpu = 0.0f;
         float avgGpu = 0.0f;
-        for (float ft: m_frameTimes) avgCpu += ft;
-        for (float ft: m_gpuFrameTimes) avgGpu += ft;
+        for (const float ft: m_frameTimes) avgCpu += ft;
+        for (const float ft: m_gpuFrameTimes) avgGpu += ft;
         avgCpu /= static_cast<float>(m_frameTimes.size());
         avgGpu /= static_cast<float>(m_gpuFrameTimes.size());
 
@@ -291,11 +290,11 @@ void VoxelEngine::mainLoop()
         ImGui::End();
 
         // Rysowanie celownika (crosshair) na środku ekranu
-        ImDrawList* drawList = ImGui::GetBackgroundDrawList();
-        auto center          = ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
-        float crosshairSize  = 8.0f;
-        ImU32 crosshairColor = IM_COL32(255, 255, 255, 200);
-        float thickness      = 2.0f;
+        ImDrawList* drawList           = ImGui::GetBackgroundDrawList();
+        const auto center              = ImVec2(ImGui::GetIO().DisplaySize.x * 0.5f, ImGui::GetIO().DisplaySize.y * 0.5f);
+        constexpr float crosshairSize  = 8.0f;
+        constexpr ImU32 crosshairColor = IM_COL32(255, 255, 255, 200);
+        constexpr float thickness      = 2.0f;
 
         drawList->AddLine(ImVec2(center.x - crosshairSize, center.y), ImVec2(center.x + crosshairSize, center.y),
                           crosshairColor, thickness);
@@ -311,13 +310,12 @@ void VoxelEngine::mainLoop()
             if (m_clickCooldown > 0.0f) { m_clickCooldown -= deltaTime; }
             else
             {
-                bool leftClick  = Input::isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT);
-                bool rightClick = Input::isMouseButtonPressed(GLFW_MOUSE_BUTTON_RIGHT);
+                const bool leftClick  = Input::isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT);
+                const bool rightClick = Input::isMouseButtonPressed(GLFW_MOUSE_BUTTON_RIGHT);
 
                 if (leftClick || rightClick)
                 {
-                    m_world->processPlayerInteraction(m_camera->getPosition(), m_camera->getFront(), leftClick,
-                                                      rightClick);
+                    m_world->processPlayerInteraction(m_camera->getPosition(), m_camera->getFront(), leftClick, rightClick);
                     m_clickCooldown = 0.2f;
                 }
             }

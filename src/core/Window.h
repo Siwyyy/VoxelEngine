@@ -8,14 +8,14 @@
 class Window
 {
 public:
-    Window(uint32_t width, uint32_t height, const std::string& title);
+    Window(uint32_t width, uint32_t height, std::string title);
     ~Window();
 
     Window(const Window&)            = delete;
     Window& operator=(const Window&) = delete;
 
     [[nodiscard]] bool shouldClose() const;
-    void pollEvents();
+    static void pollEvents() { glfwPollEvents(); }
 
     [[nodiscard]] GLFWwindow* getGLFWwindow() const { return m_window; }
 

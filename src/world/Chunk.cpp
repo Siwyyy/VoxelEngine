@@ -1,23 +1,24 @@
 #include "Chunk.h"
 
+#include <array>
 #include <fstream>
 
 #include <FastNoiseLite/FastNoiseLite.h>
 
-static const glm::vec3 FACE_VERTICES[6][4] = {
+static const std::array<std::array<glm::vec3, 4>, 6> FACE_VERTICES = {{
     // Front
-    {{-0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}},
+    {{ {-0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f} }},
     // Back
-    {{0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}},
+    {{ {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, -0.5f} }},
     // Left
-    {{-0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, -0.5f}},
+    {{ {-0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, -0.5f} }},
     // Right
-    {{0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}},
+    {{ {0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, 0.5f} }},
     // Top
-    {{-0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f}},
+    {{ {-0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f} }},
     // Bottom
-    {{-0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f}}
-};
+    {{ {-0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f} }}
+}};
 
 
 Chunk::Chunk(const glm::vec3 position, MegaBuffer* vb, MegaBuffer* ib)
@@ -103,11 +104,11 @@ void Chunk::buildMesh()
         int i, j, k, l, w, h;
         int u    = (d + 1) % 3;
         int v    = (d + 2) % 3;
-        int x[3] = {0, 0, 0};
-        int q[3] = {0, 0, 0};
+        std::array<int, 3> x = {0, 0, 0};
+        std::array<int, 3> q = {0, 0, 0};
         q[d]     = 1;
 
-        int dims[3] = {CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE};
+        std::array<int, 3> dims = {CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE};
         int dim_d   = dims[d];
         int dim_u   = dims[u];
         int dim_v   = dims[v];
@@ -115,7 +116,7 @@ void Chunk::buildMesh()
         struct MaskCell
         {
             Block block;
-            bool backFace;
+            bool backFace{};
 
             bool operator==(const MaskCell& other) const
             {
@@ -128,7 +129,7 @@ void Chunk::buildMesh()
             }
         };
 
-        MaskCell mask[CHUNK_SIZE][CHUNK_SIZE];
+        std::array<std::array<MaskCell, CHUNK_SIZE>, CHUNK_SIZE> mask{};
 
         for (x[d] = -1; x[d] < dim_d; ++x[d])
         {
@@ -184,9 +185,9 @@ void Chunk::buildMesh()
                         x[u] = i;
                         x[v] = j;
 
-                        int du[3] = {0, 0, 0};
+                        std::array<int, 3> du = {0, 0, 0};
                         du[u]     = w;
-                        int dv[3] = {0, 0, 0};
+                        std::array<int, 3> dv = {0, 0, 0};
                         dv[v]     = h;
 
                         glm::vec3 v1(x[0], x[1], x[2]);
@@ -217,8 +218,6 @@ void Chunk::buildMesh()
                             case BlockType::Dirt: color = {0.5f, 0.3f, 0.1f};
                                 break;
                             case BlockType::Stone: color = {0.5f, 0.5f, 0.5f};
-                                break;
-
                                 break;
                             case BlockType::Water: color = {0.2f, 0.4f, 0.9f};
                                 break;
@@ -291,7 +290,7 @@ void Chunk::buildMesh()
     }
 }
 
-bool Chunk::setBlock(const int x, const int y, const int z, const Block block)
+bool Chunk::setBlock(int x, int y, int z, Block block)
 {
     if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE)
     {
@@ -401,7 +400,7 @@ bool Chunk::load(const std::string& filepath)
     return true;
 }
 
-bool Chunk::isFaceVisible(const int x, const int y, const int z) const
+bool Chunk::isFaceVisible(int x, int y, int z) const
 {
     const BlockType type = getBlock(x, y, z);
     return type == BlockType::Air;

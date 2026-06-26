@@ -10,7 +10,7 @@ struct Plane
 
     Plane() = default;
 
-    Plane(const glm::vec4& p)
+    explicit Plane(const glm::vec4& p)
     {
         normal        = glm::vec3(p);
         const float l = glm::length(normal);

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <stdexcept>
 
-MegaBuffer::MegaBuffer(VkDevice device, const VmaAllocator allocator, const VkDeviceSize capacity, const VkBufferUsageFlags usage)
+MegaBuffer::MegaBuffer(VkDevice device, VmaAllocator allocator, VkDeviceSize capacity, VkBufferUsageFlags usage)
     : m_allocator(allocator)
 {
     VkBufferCreateInfo bufferInfo{};
@@ -34,7 +34,7 @@ MegaBuffer::~MegaBuffer()
     }
 }
 
-BlockAllocation MegaBuffer::allocate(const uint32_t size)
+BlockAllocation MegaBuffer::allocate(uint32_t size)
 {
     if (size == 0) return {.offset = 0, .size = 0, .valid = false};
     std::lock_guard lock(m_mutex);

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -11,8 +12,7 @@
 
 #include "Buffer.h"
 #include "MegaBuffer.h"
-
-class Chunk;
+#include "../world/Chunk.h"
 
 struct SwapChainSupportDetails
 {
@@ -29,9 +29,9 @@ struct QueueFamilyIndices
     [[nodiscard]] bool isComplete() const { return graphicsFamily.has_value() && presentFamily.has_value(); }
 };
 
-const std::vector VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
+constexpr std::array<const char*, 1> VALIDATION_LAYERS = {"VK_LAYER_KHRONOS_validation"};
 
-const std::vector DEVICE_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+constexpr std::array<const char*, 1> DEVICE_EXTENSIONS = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
 constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
@@ -53,8 +53,8 @@ public:
     void drawFrame(const glm::mat4& viewMatrix, const std::vector<Chunk*>& chunks);
 
     void initImGui(GLFWwindow* window) const;
-    void cleanupImGui();
-    void renderImGui(VkCommandBuffer commandBuffer);
+    static void cleanupImGui();
+    static void renderImGui(VkCommandBuffer commandBuffer);
 
     [[nodiscard]] VkDevice getDevice() const { return m_device; }
     [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
@@ -128,7 +128,7 @@ private:
                              const std::vector<Chunk*>& chunks);
 
     [[nodiscard]] bool isDeviceSuitable(VkPhysicalDevice device) const;
-    [[nodiscard]] bool checkDeviceExtensionSupport(VkPhysicalDevice device) const;
+    [[nodiscard]] static bool checkDeviceExtensionSupport(VkPhysicalDevice device);
     [[nodiscard]] QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device) const;
 
     [[nodiscard]] uint32_t findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags properties) const;
@@ -137,15 +137,15 @@ private:
     [[nodiscard]] VkFormat findDepthFormat() const;
 
     [[nodiscard]] SwapChainSupportDetails querySwapChainSupport(VkPhysicalDevice device) const;
-    [[nodiscard]] VkSurfaceFormatKHR chooseSwapSurfaceFormat(
-        const std::vector<VkSurfaceFormatKHR>& availableFormats) const;
-    [[nodiscard]] VkPresentModeKHR chooseSwapPresentMode(
-        const std::vector<VkPresentModeKHR>& availablePresentModes) const;
-    [[nodiscard]] VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window) const;
+    [[nodiscard]] static VkSurfaceFormatKHR chooseSwapSurfaceFormat(
+        const std::vector<VkSurfaceFormatKHR>& availableFormats);
+    [[nodiscard]] static VkPresentModeKHR chooseSwapPresentMode(
+        const std::vector<VkPresentModeKHR>& availablePresentModes);
+    [[nodiscard]] static VkExtent2D chooseSwapExtent(const VkSurfaceCapabilitiesKHR& capabilities, GLFWwindow* window);
 
-    [[nodiscard]] bool checkValidationLayerSupport() const;
-    [[nodiscard]] std::vector<const char*> getRequiredExtensions() const;
-    void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) const;
+    [[nodiscard]] static bool checkValidationLayerSupport();
+    [[nodiscard]] static std::vector<const char*> getRequiredExtensions();
+    static void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) ;
 
     static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,

@@ -1,5 +1,6 @@
 #include "GraphicsPipeline.h"
 
+#include <array>
 #include <stdexcept>
 #include <vector>
 
@@ -22,7 +23,7 @@ GraphicsPipeline::GraphicsPipeline(VkDevice device, VkFormat swapchainImageForma
     fragShaderStageInfo.module = fragShader.getModule();
     fragShaderStageInfo.pName  = "main";
 
-    VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
+    std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {vertShaderStageInfo, fragShaderStageInfo};
 
     auto bindingDescription    = Vertex::getBindingDescription();
     auto attributeDescriptions = Vertex::getAttributeDescriptions();
@@ -112,7 +113,7 @@ GraphicsPipeline::GraphicsPipeline(VkDevice device, VkFormat swapchainImageForma
     pipelineInfo.sType               = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
     pipelineInfo.pNext               = &pipelineRenderingCreateInfo;
     pipelineInfo.stageCount          = 2;
-    pipelineInfo.pStages             = shaderStages;
+    pipelineInfo.pStages             = shaderStages.data();
     pipelineInfo.pVertexInputState   = &vertexInputInfo;
     pipelineInfo.pInputAssemblyState = &inputAssembly;
     pipelineInfo.pViewportState      = &viewportState;
@@ -143,7 +144,7 @@ GraphicsPipeline::~GraphicsPipeline()
     }
 }
 
-void GraphicsPipeline::bind(const VkCommandBuffer commandBuffer) const
+void GraphicsPipeline::bind(VkCommandBuffer commandBuffer) const
 {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline);
 }

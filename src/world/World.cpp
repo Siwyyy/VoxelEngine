@@ -17,18 +17,29 @@ World::World(VulkanContext* context)
     int workerThreads                  = std::max(2, static_cast<int>(hardwareThreads) - 2);
     m_threadPool                       = std::make_unique<ThreadPool>(workerThreads);
 
-    std::cout << "Inicjalizacja Managera Swiata (render distance: " << m_renderDistance << ")...\n";
+    std::cout << "Inicjalizacja Managera Świata (render distance: " << m_renderDistance << ")...\n";
 }
 
-World::~World()
+World::~World() noexcept // NOLINT(bugprone-exception-escape)
 {
-    for (auto& [fst, snd]: m_chunkMap)
+    try
     {
-        std::stringstream ss;
-        ss << m_worldPath << "chunk_" << fst.x << "_" << fst.y << "_" << fst.z << ".bin";
-        snd->save(ss.str());
+        for (auto& [fst, snd]: m_chunkMap)
+        {
+            std::stringstream ss;
+            ss << m_worldPath << "chunk_" << fst.x << "_" << fst.y << "_" << fst.z << ".bin";
+            snd->save(ss.str());
+        }
+        m_chunkMap.clear();
     }
-    m_chunkMap.clear();
+    catch (const std::exception& e)
+    {
+        std::cerr << "Wyjatek podczas zapisu swiata w destruktorze: " << e.what() << '\n';
+    }
+    catch (...)
+    {
+        std::cerr << "Nieznany wyjatek podczas zapisu swiata w destruktorze.\n";
+    }
 }
 
 void World::update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, float deltaTime)
@@ -90,16 +101,17 @@ void World::update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, flo
                 {
                     if (x * x + y * y + z * z <= m_renderDistance * m_renderDistance)
                     {
-                        ChunkCoord coord = {currentChunkX + x, currentChunkY + y, currentChunkZ + z};
+                        ChunkCoord coord = {.x = currentChunkX + x, .y = currentChunkY + y, .z = currentChunkZ + z};
                         if (!m_chunkMap.contains(coord) && !m_chunkFutures.contains(coord))
                         {
-                            glm::vec3 pos((coord.x + 0.5f) * chunkPhysicalSize, (coord.y + 0.5f) * chunkPhysicalSize,
-                                          (coord.z + 0.5f) * chunkPhysicalSize);
+                            glm::vec3 pos((static_cast<float>(coord.x) + 0.5f) * chunkPhysicalSize,
+                                          (static_cast<float>(coord.y) + 0.5f) * chunkPhysicalSize,
+                                          (static_cast<float>(coord.z) + 0.5f) * chunkPhysicalSize);
                             glm::vec3 dir = pos - cameraPos;
                             float dist    = glm::length(dir);
                             float dot     = dist > 0.1f ? glm::dot(dir / dist, cameraFront) : 1.0f;
                             float score   = dist * (2.0f - dot);
-                            expectedChunks.push_back({coord, score});
+                            expectedChunks.push_back({.coord = coord, .score = score});
                         }
                     }
                 }
@@ -113,8 +125,9 @@ void World::update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, flo
 
         for (const auto& [coord, score]: expectedChunks)
         {
-            glm::vec3 pos(coord.x * Chunk::CHUNK_SIZE, coord.y * Chunk::CHUNK_SIZE,
-                          coord.z * Chunk::CHUNK_SIZE);
+            glm::vec3 pos(static_cast<float>(coord.x) * Chunk::CHUNK_SIZE,
+                          static_cast<float>(coord.y) * Chunk::CHUNK_SIZE,
+                          static_cast<float>(coord.z) * Chunk::CHUNK_SIZE);
             std::string filepath = m_worldPath + "chunk_" + std::to_string(coord.x) + "_" +
                     std::to_string(coord.y) + "_" + std::to_string(coord.z) + ".bin";
 
@@ -151,7 +164,7 @@ void World::update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, flo
                     chunk->save(filepath);
 
                     std::lock_guard lock(m_deletionMutex);
-                    m_chunksToDelete.push_back({std::move(chunk), currentFrame});
+                    m_chunksToDelete.push_back({.chunk = std::move(chunk), .frameRemoved = currentFrame});
                 });
             }
             else
@@ -179,11 +192,11 @@ void World::update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, flo
     }
 
     m_activeChunks.clear();
-    for (auto& pair: m_chunkMap)
+    for (auto& val: m_chunkMap | std::views::values)
     {
-        if (pair.second->getIndexCount() > 0 && pair.second->hasValidAllocation())
+        if (val->getIndexCount() > 0 && val->hasValidAllocation())
         {
-            m_activeChunks.push_back(pair.second.get());
+            m_activeChunks.push_back(val.get());
         }
     }
 
@@ -198,39 +211,6 @@ void World::update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, flo
 
         return distA < distB;
     });
-}
-
-void World::changeWorld(const std::string& newPath)
-{
-    m_threadPool->clearTasks();
-    m_threadPool.reset();
-
-    vkDeviceWaitIdle(m_vulkanContext->getDevice());
-
-    for (const auto& pair: m_chunkMap)
-    {
-        std::stringstream ss;
-        ss << m_worldPath << "chunk_" << pair.first.x << "_" << pair.first.y << "_" << pair.first.z << ".bin";
-        pair.second->save(ss.str());
-    }
-    m_chunkMap.clear();
-    m_chunkFutures.clear();
-    m_activeChunks.clear();
-
-    m_worldPath = newPath;
-    std::filesystem::create_directories(m_worldPath);
-
-    m_threadPool = std::make_unique<ThreadPool>(4);
-}
-
-void World::saveAllChunks() const
-{
-    for (auto& pair: m_chunkMap)
-    {
-        std::stringstream ss;
-        ss << m_worldPath << "chunk_" << pair.first.x << "_" << pair.first.y << "_" << pair.first.z << ".bin";
-        pair.second->save(ss.str());
-    }
 }
 
 void World::processPlayerInteraction(const glm::vec3& cameraPos, const glm::vec3& cameraFront, const bool leftClick, const bool rightClick)
@@ -330,31 +310,36 @@ void World::processPlayerInteraction(const glm::vec3& cameraPos, const glm::vec3
     }
 }
 
-Block World::getBlockAt(const int x, const int y, const int z) const
+void World::changeWorld(const std::string& newPath)
 {
-    const int chunkX = static_cast<int>(std::floor(static_cast<float>(x) / Chunk::CHUNK_SIZE));
-    const int chunkY = static_cast<int>(std::floor(static_cast<float>(y) / Chunk::CHUNK_SIZE));
-    const int chunkZ = static_cast<int>(std::floor(static_cast<float>(z) / Chunk::CHUNK_SIZE));
+    m_threadPool->clearTasks();
+    m_threadPool.reset();
 
-    const ChunkCoord coord = {chunkX, chunkY, chunkZ};
-    const auto it          = m_chunkMap.find(coord);
-    if (it != m_chunkMap.end())
+    vkDeviceWaitIdle(m_vulkanContext->getDevice());
+
+    for (const auto& pair: m_chunkMap)
     {
-        const int lx = x - chunkX * Chunk::CHUNK_SIZE;
-        const int ly = y - chunkY * Chunk::CHUNK_SIZE;
-        const int lz = z - chunkZ * Chunk::CHUNK_SIZE;
-        return it->second->getBlock(lx, ly, lz);
+        std::stringstream ss;
+        ss << m_worldPath << "chunk_" << pair.first.x << "_" << pair.first.y << "_" << pair.first.z << ".bin";
+        pair.second->save(ss.str());
     }
-    return Block(BlockType::Air);
+    m_chunkMap.clear();
+    m_chunkFutures.clear();
+    m_activeChunks.clear();
+
+    m_worldPath = newPath;
+    std::filesystem::create_directories(m_worldPath);
+
+    m_threadPool = std::make_unique<ThreadPool>(4);
 }
 
-void World::setBlockAt(const int x, const int y, const int z, const Block block)
+void World::setBlockAt(int x, int y, int z, const Block block)
 {
     const auto chunkX = static_cast<int>(std::floor(static_cast<float>(x) / Chunk::CHUNK_SIZE));
     const auto chunkY = static_cast<int>(std::floor(static_cast<float>(y) / Chunk::CHUNK_SIZE));
     const auto chunkZ = static_cast<int>(std::floor(static_cast<float>(z) / Chunk::CHUNK_SIZE));
 
-    const ChunkCoord coord = {chunkX, chunkY, chunkZ};
+    const ChunkCoord coord = {.x = chunkX, .y = chunkY, .z = chunkZ};
     const auto it          = m_chunkMap.find(coord);
     if (it != m_chunkMap.end())
     {
@@ -396,5 +381,33 @@ void World::setBlockAt(const int x, const int y, const int z, const Block block)
                 if (nIt != m_chunkMap.end()) nIt->second->setDirty(true);
             }
         }
+    }
+}
+
+Block World::getBlockAt(int x, int y, int z) const
+{
+    const int chunkX = static_cast<int>(std::floor(static_cast<float>(x) / Chunk::CHUNK_SIZE));
+    const int chunkY = static_cast<int>(std::floor(static_cast<float>(y) / Chunk::CHUNK_SIZE));
+    const int chunkZ = static_cast<int>(std::floor(static_cast<float>(z) / Chunk::CHUNK_SIZE));
+
+    const ChunkCoord coord = {.x = chunkX, .y = chunkY, .z = chunkZ};
+    const auto it          = m_chunkMap.find(coord);
+    if (it != m_chunkMap.end())
+    {
+        const int lx = x - chunkX * Chunk::CHUNK_SIZE;
+        const int ly = y - chunkY * Chunk::CHUNK_SIZE;
+        const int lz = z - chunkZ * Chunk::CHUNK_SIZE;
+        return it->second->getBlock(lx, ly, lz);
+    }
+    return {BlockType::Air};
+}
+
+void World::saveAllChunks() const
+{
+    for (auto& pair: m_chunkMap)
+    {
+        std::stringstream ss;
+        ss << m_worldPath << "chunk_" << pair.first.x << "_" << pair.first.y << "_" << pair.first.z << ".bin";
+        pair.second->save(ss.str());
     }
 }

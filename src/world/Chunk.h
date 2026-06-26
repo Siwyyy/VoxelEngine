@@ -1,6 +1,5 @@
 #pragma once
 
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -24,7 +23,8 @@ struct Block
     BlockType type;
     uint8_t metadata;
 
-    Block(const BlockType t = BlockType::Air, const uint8_t m = 0) : type(t), metadata(m) {}
+    Block() : type(BlockType::Air), metadata(0) {}
+    Block(const BlockType t, const uint8_t m = 0) : type(t), metadata(m) {}
 
     bool operator==(const Block& other) const { return type == other.type && metadata == other.metadata; }
     bool operator!=(const Block& other) const { return !(*this == other); }
@@ -65,11 +65,6 @@ public:
     [[nodiscard]] uint32_t getIndexOffset() const { return m_indexAllocation.offset; }
 
 private:
-    [[nodiscard]] bool isFaceVisible(int x, int y, int z) const;
-
-    void addFace(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, int x, int y, int z, int faceIndex,
-                 Block block) const;
-
     glm::vec3 m_position;
 
     MegaBuffer* m_megaVertexBuffer;
@@ -80,7 +75,13 @@ private:
     uint32_t m_indexCount = 0;
 
     FastNoiseLite m_noise;
-    Block m_blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE];
+    Block m_blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE]{};
+
     bool m_isDirty     = false;
     bool m_isSaveDirty = false;
+
+    [[nodiscard]] bool isFaceVisible(int x, int y, int z) const;
+
+    void addFace(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, int x, int y, int z, int faceIndex,
+                 Block block) const;
 };

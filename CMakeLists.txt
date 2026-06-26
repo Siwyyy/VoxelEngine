@@ -1,15 +1,25 @@
 cmake_minimum_required(VERSION 3.20)
 project(VoxelEngine)
 
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 23)
 
 # Clang-Tidy static analysis option
 option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
 
+# pomiar czasu kompilacji
+set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
+
 if (ENABLE_CLANG_TIDY)
     find_program(CLANG_TIDY_EXE NAMES clang-tidy)
     if (CLANG_TIDY_EXE)
-        set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE};-checks=bugprone-*,modernize-*,performance-*,-modernize-use-trailing-return-type;--extra-arg=/EHsc")
+        set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE};
+        -checks=bugprone-*,
+        modernize-*,
+        performance-*,
+        -modernize-use-trailing-return-type,
+        -bugprone-easily-swappable-parameters,
+        -clang-analyzer-optin.core.EnumCastOutOfRange;
+        --extra-arg=/EHsc")
         message(STATUS "Clang-Tidy found and enabled: ${CLANG_TIDY_EXE}")
     else ()
         message(WARNING "Clang-Tidy not found! Code analysis disabled.")
@@ -46,6 +56,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         ${GLFW_DIR}/lib/glfw3.lib
         ImGui
 )
+
+# Enable Precompiled Headers (PCH)
+target_precompile_headers(${PROJECT_NAME} PRIVATE src/pch.h)
 
 # Shader compilation using glslc from Vulkan SDK
 find_program(GLSLC_EXECUTABLE NAMES glslc HINTS $ENV{VULKAN_SDK}/Bin)
