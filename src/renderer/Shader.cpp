@@ -9,10 +9,11 @@ Shader::Shader(VkDevice device, const std::string& filePath)
 {
     const auto code = FileSystem::readFile(filePath);
 
-    VkShaderModuleCreateInfo createInfo{};
-    createInfo.sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-    createInfo.codeSize = code.size();
-    createInfo.pCode    = reinterpret_cast<const uint32_t*>(code.data());
+    VkShaderModuleCreateInfo createInfo{
+        .sType    = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        .codeSize = code.size(),
+        .pCode    = reinterpret_cast<const uint32_t*>(code.data())
+    };
 
     if (vkCreateShaderModule(m_device, &createInfo, nullptr, &m_module) != VK_SUCCESS)
     {
