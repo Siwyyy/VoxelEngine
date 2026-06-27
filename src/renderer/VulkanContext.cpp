@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <array>
 #include <chrono>
-#include <iostream>
 #include <limits>
 #include <set>
 #include <stdexcept>
@@ -307,7 +306,7 @@ void VulkanContext::createInstance()
         throw std::runtime_error("Failed to create Vulkan instance!");
     }
 
-    std::cout << "Success: Vulkan instance and debug messenger created!\n";
+    std::println("Success: Vulkan instance and debug messenger created!");
 }
 
 void VulkanContext::setupDebugMessenger()
@@ -1057,6 +1056,6 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanContext::debugCallback(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
     void* pUserData)
 {
-    std::cerr << "Validation layer: " << pCallbackData->pMessage << "\n";
+    std::println(stderr, "Validation layer: {}", pCallbackData->pMessage);
     return VK_FALSE;
 }

@@ -3,9 +3,7 @@
 #include <algorithm>
 #include <cmath>
 #include <filesystem>
-#include <iostream>
 #include <ranges>
-#include <sstream>
 
 #include "renderer/VulkanContext.h"
 
@@ -17,7 +15,7 @@ World::World(VulkanContext* context)
     int workerThreads                  = std::max(2, static_cast<int>(hardwareThreads) - 2);
     m_threadPool                       = std::make_unique<ThreadPool>(workerThreads);
 
-    std::cout << "Inicjalizacja Managera Świata (render distance: " << m_renderDistance << ")...\n";
+    std::println("Inicjalizacja Managera Świata (render distance: {})...", m_renderDistance);
 }
 
 World::~World() noexcept // NOLINT(bugprone-exception-escape)
@@ -26,19 +24,18 @@ World::~World() noexcept // NOLINT(bugprone-exception-escape)
     {
         for (auto& [fst, snd]: m_chunkMap)
         {
-            std::stringstream ss;
-            ss << m_worldPath << "chunk_" << fst.x << "_" << fst.y << "_" << fst.z << ".bin";
-            snd->save(ss.str());
+            std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, fst.x, fst.y, fst.z);
+            snd->save(filepath);
         }
         m_chunkMap.clear();
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Wyjatek podczas zapisu swiata w destruktorze: " << e.what() << '\n';
+        std::println(stderr, "Wyjatek podczas zapisu swiata w destruktorze: {}", e.what());
     }
     catch (...)
     {
-        std::cerr << "Nieznany wyjatek podczas zapisu swiata w destruktorze.\n";
+        std::println(stderr, "Nieznany wyjatek podczas zapisu swiata w destruktorze.");
     }
 }
 
@@ -151,9 +148,7 @@ void World::update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, flo
             int dz = it->first.z - currentChunkZ;
             if (dx * dx + dy * dy + dz * dz > (m_renderDistance + 2) * (m_renderDistance + 2))
             {
-                std::stringstream ss;
-                ss << m_worldPath << "chunk_" << it->first.x << "_" << it->first.y << "_" << it->first.z << ".bin";
-                std::string filepath = ss.str();
+                std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, it->first.x, it->first.y, it->first.z);
 
                 auto chunk = std::move(it->second);
                 it         = m_chunkMap.erase(it);
@@ -319,9 +314,8 @@ void World::changeWorld(const std::string& newPath)
 
     for (const auto& pair: m_chunkMap)
     {
-        std::stringstream ss;
-        ss << m_worldPath << "chunk_" << pair.first.x << "_" << pair.first.y << "_" << pair.first.z << ".bin";
-        pair.second->save(ss.str());
+        std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, pair.first.x, pair.first.y, pair.first.z);
+        pair.second->save(filepath);
     }
     m_chunkMap.clear();
     m_chunkFutures.clear();
@@ -406,8 +400,7 @@ void World::saveAllChunks() const
 {
     for (auto& pair: m_chunkMap)
     {
-        std::stringstream ss;
-        ss << m_worldPath << "chunk_" << pair.first.x << "_" << pair.first.y << "_" << pair.first.z << ".bin";
-        pair.second->save(ss.str());
+        std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, pair.first.x, pair.first.y, pair.first.z);
+        pair.second->save(filepath);
     }
 }

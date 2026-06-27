@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "core/VoxelEngine.h"
 
 int main()
@@ -11,7 +9,7 @@ int main()
     }
     catch (const std::exception& e)
     {
-        std::cerr << "Fatal Error: " << e.what() << "\n";
+        std::println(stderr, "Fatal Error: {}", e.what());
         return EXIT_FAILURE;
     }
 
