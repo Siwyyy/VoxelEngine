@@ -37,3 +37,25 @@ Wzbogacenie interakcji ze światem gry.
 Usprawnienia pod maską.
 - [ ] **Zapis ustawień do pliku**: Zapisywanie render distance, czułości myszy i innych opcji do pliku `config.json` lub `.ini`.
 - [ ] **Occlusion Culling (GPU)**: Odrzucanie całych chunków, które są całkowicie zasłonięte przez inne chunki znajdujące się bliżej kamery (np. za pomocą Hi-Z lub zapytań o zajętość pikseli).
+
+---
+
+## 🚀 5. Modernizacja Kodu (C++20 / C++23)
+Stopniowe wprowadzanie nowoczesnych standardów języka w celu poprawy bezpieczeństwa, czytelności i wydajności.
+
+### 📦 Core, Input i Utils
+- [ ] **`std::expected` zamiast wyjątków w `FileSystem::readFile`**: Bezpieczniejsza, funkcyjna obsługa błędów odczytu plików bez narzutu wyjątków.
+- [ ] **Algorytmy `std::ranges` w statystykach i culling'u**: Użycie `std::ranges::fold_left` w `VoxelEngine.cpp` do liczenia średniego czasu klatki oraz `std::ranges::all_of` w `Frustum.cpp` zamiast klasycznych pętli.
+- [ ] **Mocno typowane klawisze (`std::to_underlying`)**: Zastąpienie makr `LAVA_KEY_...` w `KeyCodes.h` oraz `LAVA_MOUSE_...` w `MouseButtonCodes.h` przez `enum class KeyCode : int32_t` i `enum class MouseButton : int32_t`, z rzutowaniem przez `std::to_underlying`.
+- [ ] **Wątki z `std::move_only_function`**: Zastąpienie `std::function` w kolejce `ThreadPool::m_tasks` na rzecz `std::move_only_function`, co eliminuje potrzebę alokacji przez `std::make_shared` w `enqueue()`.
+
+### 🌍 World (Świat)
+- [ ] **Płaskie tablice z widokiem `std::mdspan`**: Zastąpienie zagnieżdżonych tablic C-style w klasie `Chunk` (`Block m_blocks[32][32][32]`) spłaszczonym `std::array<Block, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE>` z widokiem `std::mdspan` i wielowymiarowym operatorem `[]` z C++23.
+- [ ] **Eliminacja zagnieżdżonych pętli (`std::views::cartesian_product`)**: Skrócenie generowania chunków w `Chunk::generateTerrain()` przy użyciu potoków ranges.
+- [x] **Formatowanie ścieżek i logów (`std::format` / `std::print`)**: Zastąpienie wolnego `std::stringstream` oraz klasycznego `std::cout`/`std::cerr` przez `std::format` i C++23-standardowe `std::print`/`std::println`.
+
+### 🎨 Renderer & Vulkan
+- [ ] **Zastąpienie par wskaźnik + rozmiar przez `std::span`**: Zabezpieczenie operacji kopiowania buforów w `MegaBuffer` poprzez templatyzowane `upload` przyjmujące `std::span<const T>`.
+- [ ] **Potoki `std::ranges` w generowaniu komend rysowania**: Zastąpienie tradycyjnej pętli generującej komendy pośrednie rysowania (`VkDrawIndexedIndirectCommand`) w `VulkanContext::drawFrame` potokiem z `std::views::filter` i `std::views::transform`, kopiującym dane bezpośrednio do zmapowanej pamięci za pomocą `std::ranges::copy`.
+- [ ] **Monadyczny `std::optional` w alokacji**: Zmiana typu zwracanego przez `MegaBuffer::allocate` na `std::optional<BlockAllocation>` i wykorzystanie operacji łańcuchowych takich jak `and_then` lub `or_else`.
+- [x] **Optymalizacja `std::vector` na `std::array` w Vertex**: Zmiana typu zwracanego z `Vertex::getAttributeDescriptions()` na `std::array<VkVertexInputAttributeDescription, 2>`, eliminująca dynamiczną alokację wektora.
