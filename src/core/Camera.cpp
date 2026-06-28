@@ -3,7 +3,7 @@
 #include <algorithm>
 
 #include "input/Input.h"
-#include "input/KeyCodes.h"
+#include "input/InputCodes.h"
 
 namespace voxl
 {
@@ -14,12 +14,12 @@ namespace voxl
     {
         // Ruch klawiaturą
         const float velocity = m_movementSpeed * deltaTime;
-        if (Input::isKeyPressed(LAVA_KEY_W)) m_position += m_front * velocity;
-        if (Input::isKeyPressed(LAVA_KEY_S)) m_position -= m_front * velocity;
-        if (Input::isKeyPressed(LAVA_KEY_A)) m_position -= m_right * velocity;
-        if (Input::isKeyPressed(LAVA_KEY_D)) m_position += m_right * velocity;
-        if (Input::isKeyPressed(LAVA_KEY_SPACE)) m_position += m_worldUp * velocity;
-        if (Input::isKeyPressed(LAVA_KEY_LEFT_SHIFT)) m_position -= m_worldUp * velocity;
+        if (Input::isKeyPressed(KeyCode::W)) m_position += m_front * velocity;
+        if (Input::isKeyPressed(KeyCode::S)) m_position -= m_front * velocity;
+        if (Input::isKeyPressed(KeyCode::A)) m_position -= m_right * velocity;
+        if (Input::isKeyPressed(KeyCode::D)) m_position += m_right * velocity;
+        if (Input::isKeyPressed(KeyCode::Space)) m_position += m_worldUp * velocity;
+        if (Input::isKeyPressed(KeyCode::LeftShift)) m_position -= m_worldUp * velocity;
 
         // Obrót myszką
         const glm::vec2 mousePos = Input::getMousePosition();

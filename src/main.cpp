@@ -1,10 +1,13 @@
 #include <print>
 
+#include "core/Log.h"
 #include "core/VoxelEngine.h"
 
 
 int main()
 {
+    voxl::Log::init();
+
     try
     {
         voxl::VoxelEngine engine;

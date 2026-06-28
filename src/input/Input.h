@@ -3,6 +3,8 @@
 
 #include <glm/vec2.hpp>
 
+#include "InputCodes.h"
+
 namespace voxl
 {
     class Input
@@ -15,13 +17,13 @@ namespace voxl
         Input& operator=(Input&&)      = delete;
         virtual ~Input()               = default;
 
-        inline static bool isKeyPressed(int32_t keycode) { return s_instance->isKeyPressedImpl(keycode); }
-        inline static bool isMouseButtonPressed(int32_t button) { return s_instance->isMouseButtonPressedImpl(button); }
+        inline static bool isKeyPressed(KeyCode keyCode) { return s_instance->isKeyPressedImpl(keyCode); }
+        inline static bool isMouseButtonPressed(MouseCode mouseCode) { return s_instance->isMouseButtonPressedImpl(mouseCode); }
         inline static glm::vec2 getMousePosition() { return s_instance->getMousePositionImpl(); }
 
     protected:
-        [[nodiscard]] virtual bool isKeyPressedImpl(int32_t keycode) const = 0;
-        [[nodiscard]] virtual bool isMouseButtonPressedImpl(int32_t button) const = 0;
+        [[nodiscard]] virtual bool isKeyPressedImpl(KeyCode keycode) const = 0;
+        [[nodiscard]] virtual bool isMouseButtonPressedImpl(MouseCode button) const = 0;
         [[nodiscard]] virtual glm::vec2 getMousePositionImpl() const = 0;
 
     public:

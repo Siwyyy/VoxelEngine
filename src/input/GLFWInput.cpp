@@ -1,5 +1,7 @@
 #include "GLFWInput.h"
 
+#include <utility>
+
 namespace voxl
 {
     Input* Input::s_instance = nullptr;
@@ -10,15 +12,15 @@ namespace voxl
         s_instance = this;
     }
 
-    bool GLFWInput::isKeyPressedImpl(int32_t keycode) const
+    bool GLFWInput::isKeyPressedImpl(KeyCode keyCode) const
     {
-        const auto state = glfwGetKey(m_window, keycode);
+        const auto state = glfwGetKey(m_window, static_cast<int>(std::to_underlying(keyCode)));
         return state == GLFW_PRESS || state == GLFW_REPEAT;
     }
 
-    bool GLFWInput::isMouseButtonPressedImpl(int32_t button) const
+    bool GLFWInput::isMouseButtonPressedImpl(MouseCode mouseCode) const
     {
-        const auto state = glfwGetMouseButton(m_window, button);
+        const auto state = glfwGetMouseButton(m_window, static_cast<int>(std::to_underlying(mouseCode)));
         return state == GLFW_PRESS;
     }
 

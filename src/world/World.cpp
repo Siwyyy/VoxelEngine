@@ -18,7 +18,7 @@ namespace voxl
         int workerThreads                  = std::max(2, static_cast<int>(hardwareThreads) - 2);
         m_threadPool                       = std::make_unique<ThreadPool>(workerThreads);
 
-        std::println("Inicjalizacja Managera Świata (render distance: {})...", m_renderDistance); // NOLINT(modernize-use-std-print)
+        std::println("Initializing World Manager (render distance: {})...", m_renderDistance); // NOLINT(modernize-use-std-print)
     }
 
     World::~World() noexcept // NOLINT(bugprone-exception-escape)
@@ -34,11 +34,11 @@ namespace voxl
         }
         catch (const std::exception& e)
         {
-            std::println(stderr, "Wyjatek podczas zapisu swiata w destruktorze: {}", e.what());
+            std::println(stderr, "Exception while saving world in destructor: {}", e.what());
         }
         catch (...)
         {
-            std::println(stderr, "Nieznany wyjatek podczas zapisu swiata w destruktorze.");
+            std::println(stderr, "Unknown exception while saving world in destructor.");
         }
     }
 

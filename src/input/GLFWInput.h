@@ -11,8 +11,8 @@ namespace voxl
         explicit GLFWInput(GLFWwindow* window);
 
     private:
-        [[nodiscard]] bool isKeyPressedImpl(int32_t keycode) const override;
-        [[nodiscard]] bool isMouseButtonPressedImpl(int32_t button) const override;
+        [[nodiscard]] bool isKeyPressedImpl(KeyCode keyCode) const override;
+        [[nodiscard]] bool isMouseButtonPressedImpl(MouseCode mouseCode) const override;
         [[nodiscard]] glm::vec2 getMousePositionImpl() const override;
 
         GLFWwindow* m_window;

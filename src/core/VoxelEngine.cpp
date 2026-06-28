@@ -9,7 +9,7 @@
 
 #include "Time.h"
 #include "input/GLFWInput.h"
-#include "input/KeyCodes.h"
+
 
 namespace voxl
 {
@@ -170,9 +170,9 @@ namespace voxl
                 continue;
             }
 
-            if (Input::isKeyPressed(LAVA_KEY_ESCAPE)) { glfwSetWindowShouldClose(m_window->getGLFWwindow(), GLFW_TRUE); }
+            if (Input::isKeyPressed(KeyCode::Escape)) { glfwSetWindowShouldClose(m_window->getGLFWwindow(), GLFW_TRUE); }
 
-            const bool tabPressed = Input::isKeyPressed(LAVA_KEY_TAB);
+            const bool tabPressed = Input::isKeyPressed(KeyCode::Tab);
             if (tabPressed && !m_tabPressedLastFrame)
             {
                 m_cursorEnabled = !m_cursorEnabled;
@@ -311,8 +311,8 @@ namespace voxl
                 if (m_clickCooldown > 0.0f) { m_clickCooldown -= deltaTime; }
                 else
                 {
-                    const bool leftClick  = Input::isMouseButtonPressed(GLFW_MOUSE_BUTTON_LEFT);
-                    const bool rightClick = Input::isMouseButtonPressed(GLFW_MOUSE_BUTTON_RIGHT);
+                    const bool leftClick  = Input::isMouseButtonPressed(MouseCode::Left);
+                    const bool rightClick = Input::isMouseButtonPressed(MouseCode::Right);
 
                     if (leftClick || rightClick)
                     {
