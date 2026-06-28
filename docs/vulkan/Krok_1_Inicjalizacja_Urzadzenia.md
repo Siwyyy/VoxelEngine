@@ -2,7 +2,7 @@
 
 Pierwszy krok inicjalizacji [[api/VoxelEngine|silnika graficznego]] polega na skonfigurowaniu bazowego środowiska Vulkan: utworzeniu instancji, powiązaniu debuggowania, powiązaniu [[api/Window|okna GLFW]] oraz utworzeniu logicznego urządzenia GPU obsługującego wymagane rozszerzenia.
 
-Kod ten znajduje się w pliku [VulkanContext.cpp](file:///c:/dev/repos/VoxelEngine/src/renderer/VulkanContext.cpp) (klasy [[api/VulkanContext|VulkanContext]]).
+Kod ten znajduje się w pliku [VulkanContext.cpp](../../src/renderer/VulkanContext.cpp) (klasy [[api/VulkanContext|VulkanContext]]).
 
 ---
 
@@ -78,11 +78,34 @@ bool VulkanContext::isDeviceSuitable(VkPhysicalDevice device) const {
 
 Po wybraniu fizycznego procesora GPU tworzone jest logiczne urządzenie (`VkDevice`), które reprezentuje nasze połączenie z kartą graficzną.
 
-* **Queue Families (Rodziny Kolejek)**: Konfigurowane są kolejka graficzna (Graphics Queue) do renderowania oraz kolejka prezentacji (Presentation Queue) do wyświetlania obrazu. Zazwyczaj są one tą samą kolejką na współczesnych GPU.
+* **Queue Families (Rodziny Kolejek)**: Konfigurowane są kolejka graficzna (Graphics Queue) do renderowania oraz kolejka prezentacji (Presentation Queue) do wyświetlania obrazu.
 * **Rozszerzenia Urządzenia**: Włączane jest rozszerzenie Swapchain.
-* **Włączanie Funkcji GPU**:
+* **Włączanie Funkcji GPU i Vulkan 1.3**:
+  Oprócz funkcji sprzętowych, silnik musi jawnie aktywować obsługę dynamicznego renderowania w standardzie **Vulkan 1.3**:
   ```cpp
   VkPhysicalDeviceFeatures deviceFeatures{};
   deviceFeatures.multiDrawIndirect = VK_TRUE; // Aktywowanie sprzętowego [[vulkan/Krok_4_Zasoby_i_Synchronizacja|MDI]]
+
+  VkPhysicalDeviceVulkan13Features vulkan13Features{};
+  vulkan13Features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+  vulkan13Features.dynamicRendering = VK_TRUE; // Aktywowanie Dynamic Rendering (brak Render Passów)
+
+  VkDeviceCreateInfo createInfo{
+      .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+      .pNext = &vulkan13Features,
+      .queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size()),
+      .pQueueCreateInfos = queueCreateInfos.data(),
+      .enabledExtensionCount = static_cast<uint32_t>(DEVICE_EXTENSIONS.size()),
+      .ppEnabledExtensionNames = DEVICE_EXTENSIONS.data(),
+      .pEnabledFeatures = &deviceFeatures
+  };
   ```
-* **Biblioteka VMA (Vulkan Memory Allocator)**: Po utworzeniu logicznego urządzenia inicjalizowany jest alokator pamięci graficznej VMA (`VmaAllocator`), który służy do tworzenia i zarządzania buforami w silniku (np. [[api/MegaBuffer|MegaBuffer]]).
+* **Biblioteka VMA (Vulkan Memory Allocator)**: Po utworzeniu logicznego urządzenia inicjalizowany jest alokator pamięci graficznej VMA (`VmaAllocator`), który służy do tworzenia i zarządzania buforami w silniku (np. [[api/MegaBuffer|MegaBuffer]]):
+  ```cpp
+  VmaAllocatorCreateInfo allocatorInfo{
+      .physicalDevice = m_physicalDevice,
+      .device = m_device,
+      .instance = m_instance,
+      // ...
+  };
+  ```

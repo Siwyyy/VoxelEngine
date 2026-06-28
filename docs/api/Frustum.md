@@ -2,7 +2,7 @@
 
 Klasa **`Frustum`** reprezentuje bryłę ostrosłupa ściętego widoku kamery. Służy do przeprowadzania testów widoczności [[api/Chunk|chunków]] w przestrzeni trójwymiarowej świata gry, co zapobiega wysyłaniu niewidocznych geometrii do GPU.
 
-Definicja klasy znajduje się w pliku [Frustum.h](file:///c:/dev/repos/VoxelEngine/src/core/Frustum.h), a jej implementacja w [Frustum.cpp](file:///c:/dev/repos/VoxelEngine/src/core/Frustum.cpp).
+Definicja klasy znajduje się w pliku [Frustum.h](../../src/core/Frustum.h), a jej implementacja w [Frustum.cpp](../../src/core/Frustum.cpp).
 
 ---
 

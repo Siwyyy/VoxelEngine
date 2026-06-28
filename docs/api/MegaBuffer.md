@@ -2,7 +2,7 @@
 
 Klasa **`MegaBuffer`** odpowiada za niestandardowe zarządzanie pamięcią wierzchołków i indeksów na GPU. Zamiast alokować dziesiątki osobnych buforów Vulkan dla każdego [[api/Chunk|chunku]] świata (co wywołałoby ogromny narzut wydajnościowy sterownika), prealokuje jeden duży bufor o stałym rozmiarze i udostępnia interfejs szybkiej alokacji i zwalniania pamięci za pomocą algorytmu **First-Fit**.
 
-Definicja klasy znajduje się w pliku [MegaBuffer.h](file:///c:/dev/repos/VoxelEngine/src/renderer/MegaBuffer.h), a jej implementacja w [MegaBuffer.cpp](file:///c:/dev/repos/VoxelEngine/src/renderer/MegaBuffer.cpp).
+Definicja klasy znajduje się w pliku [MegaBuffer.h](../../src/renderer/MegaBuffer.h), a jej implementacja w [MegaBuffer.cpp](../../src/renderer/MegaBuffer.cpp).
 
 ---
 

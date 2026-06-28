@@ -16,13 +16,17 @@ Silnik rezygnuje z tradycyjnych mechanizmów Vulkan, takich jak *Render Passes* 
 * **Elastyczność**: W metodzie `recordCommandBuffer` rysowanie rozpoczyna się od bezpośredniego wywołania struktury `VkRenderingInfo` za pomocą funkcji `vkCmdBeginRendering`:
 
 ```cpp
-VkRenderingInfo renderingInfo{};
-renderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-renderingInfo.renderArea = { {0, 0}, m_swapchainExtent };
-renderingInfo.layerCount = 1;
-renderingInfo.colorAttachmentCount = 1;
-renderingInfo.pColorAttachments = &colorAttachment;
-renderingInfo.pDepthAttachment = &depthAttachment;
+VkRenderingInfo renderingInfo{
+    .sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+    .renderArea = {
+        .offset = {.x = 0, .y = 0},
+        .extent = m_swapchainExtent
+    },
+    .layerCount = 1,
+    .colorAttachmentCount = 1,
+    .pColorAttachments = &colorAttachmentInfo,
+    .pDepthAttachment = &depthAttachmentInfo
+};
 
 vkCmdBeginRendering(commandBuffer, &renderingInfo);
 ```
@@ -36,14 +40,15 @@ Najważniejszą optymalizacją w VoxelEngine jest zastosowanie **Multi-Draw Indi
 ### Jak to działa?
 1. **Bufor komend pośrednich (`m_indirectBuffer`)**: W pamięci karty graficznej prealokowany jest bufor o rozmiarze `m_maxIndirectCommands` (domyślnie 30 000 komend) typu `VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT`. Bufor ten jest stale zmapowany (`m_indirectMappedData`).
 2. **Generowanie listy poleceń na CPU**: Dla każdego [[api/Chunk|chunku]], który przeszedł [[algorithms/Frustum_Culling|test bryły widoku (frustum culling)]], CPU zapisuje strukturę `VkDrawIndexedIndirectCommand`:
-   ```cpp
-   VkDrawIndexedIndirectCommand cmd{};
-   cmd.indexCount    = chunk->getIndexCount(); // Liczba indeksów siatki chunku
-   cmd.instanceCount = 1;
-   cmd.firstIndex    = chunk->getIndexOffset(); // Przesunięcie w Mega buforze indeksów
-   cmd.vertexOffset  = chunk->getVertexOffset(); // Przesunięcie w Mega buforze wierzchołków
-   cmd.firstInstance = 0;
-   ```
+    ```cpp
+    VkDrawIndexedIndirectCommand cmd{
+        .indexCount    = chunk->getIndexCount(), // Liczba indeksów siatki chunku
+        .instanceCount = 1,
+        .firstIndex    = static_cast<uint32_t>(chunk->getIndexOffset() / sizeof(uint32_t)),
+        .vertexOffset  = static_cast<int32_t>(chunk->getVertexOffset() / sizeof(Vertex)),
+        .firstInstance = 0
+    };
+    ```
 3. **Kopiowanie**: Wszystkie polecenia są kopiowane za pomocą `std::memcpy` bezpośrednio do pamięci zmapowanej.
 4. **Wywołanie na GPU**: Następuje jedno wywołanie systemowe rysujące:
    ```cpp
@@ -99,7 +104,7 @@ Klasa [[api/GraphicsPipeline|GraphicsPipeline]] konfiguruje stan potoku graficzn
 * **Format Wierzchołka (`Vertex`)**:
   * Pozycja: `glm::vec3` (powiązana z `location = 0` w shaderze).
   * Kolor: `glm::vec3` (powiązana z `location = 1` w shaderze).
-* **Push Constants**: Do przekazywania macierzy MVP bezpośrednio z CPU do GPU w czasie rzeczywistym bez narzutu na tworzenie Descriptor Setów.
+* **Push Constants**: Do przekazywania macierzy MVP bezpośrednio z CPU do GPU w czasie rzeczywistym bez narzutu na tworzenie Descriptor Setów (macierz pobiera dane z klasy [[api/Time|Time]]).
 * **Multisampling & Depth Stencil**: Włączony bufor głębokości (Depth Buffer) o formacie `VK_FORMAT_D32_SFLOAT`, zapobiegający błędnemu nakładaniu się ścian voxelowych.
 
 ---

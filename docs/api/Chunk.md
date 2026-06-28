@@ -2,19 +2,37 @@
 
 Klasa **`Chunk`** reprezentuje trójwymiarowy fragment świata gry o stałym rozmiarze. Odpowiada za przechowywanie voxelowych struktur danych, generowanie terenu (przy użyciu szumów szkieletowych), budowanie siatki wierzchołków przy użyciu algorytmu optymalizacyjnego [[algorithms/Greedy_Meshing|Greedy Meshing]], alokację pamięci w buforach GPU oraz zapis i odczyt stanów z dysku.
 
-Definicja klasy znajduje się w pliku [Chunk.h](file:///c:/dev/repos/VoxelEngine/src/world/Chunk.h), a jej implementacja w [Chunk.cpp](file:///c:/dev/repos/VoxelEngine/src/world/Chunk.cpp).
+Definicja klasy znajduje się w pliku [Chunk.h](../../src/world/Chunk.h), a jej implementacja w [Chunk.cpp](../../src/world/Chunk.cpp).
 
 ---
 
 ## 🏗️ Definicja Klasy (`Chunk.h`)
 
 ```cpp
+enum class BlockType : uint8_t
+{
+    Air   = 0,
+    Grass = 1,
+    Dirt  = 2,
+    Stone = 3,
+    Water = 6
+};
+
+struct Block
+{
+    BlockType type;
+    uint8_t metadata;
+    // ...
+};
+
 class Chunk
 {
 public:
     static constexpr int CHUNK_SIZE = 64;
 
     Chunk(glm::vec3 position, MegaBuffer* vb, MegaBuffer* ib);
+    Chunk(Chunk&&)            = delete;
+    Chunk& operator=(Chunk&&) = delete;
     ~Chunk();
 
     void generateTerrain();

@@ -2,7 +2,7 @@
 
 W tym kroku [[api/VoxelEngine|silnik graficzny]] tworzy [[api/GraphicsPipeline|potok graficzny (GraphicsPipeline)]] obsługujący renderowanie dynamiczne (Dynamic Rendering), rezygnując z tradycyjnych Render Passów na rzecz elastyczności wprowadzonej w Vulkanie 1.3.
 
-Kod ten znajduje się w pliku [GraphicsPipeline.cpp](file:///c:/dev/repos/VoxelEngine/src/renderer/GraphicsPipeline.cpp) (klasy [[api/GraphicsPipeline|GraphicsPipeline]]).
+Kod ten znajduje się w pliku [GraphicsPipeline.cpp](../../src/renderer/GraphicsPipeline.cpp) (klasy [[api/GraphicsPipeline|GraphicsPipeline]]).
 
 ---
 
@@ -12,17 +12,23 @@ Zamiast przekazywać wskaźnik do obiektu `VkRenderPass` podczas tworzenia [[api
 
 Ustawiane są tam formaty załączników koloru (pochodzącego ze [[vulkan/Krok_2_Swapchain|Swapchaina]]) oraz głębokości:
 ```cpp
-VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo{};
-pipelineRenderingCreateInfo.sType                   = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
-pipelineRenderingCreateInfo.colorAttachmentCount    = 1;
-pipelineRenderingCreateInfo.pColorAttachmentFormats = &swapchainImageFormat;
-pipelineRenderingCreateInfo.depthAttachmentFormat   = depthFormat;
+VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo{
+    .sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+    .colorAttachmentCount = 1,
+    .pColorAttachmentFormats = &swapchainImageFormat,
+    .depthAttachmentFormat = depthFormat
+};
 ```
 
 Dzięki temu pole `renderPass` w strukturze `VkGraphicsPipelineCreateInfo` może pozostać pustym uchwytem (`VK_NULL_HANDLE`):
 ```cpp
-pipelineInfo.pNext      = &pipelineRenderingCreateInfo;
-pipelineInfo.renderPass = VK_NULL_HANDLE; // Zamiast tradycyjnego Render Passu
+VkGraphicsPipelineCreateInfo pipelineInfo{
+    .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+    .pNext = &pipelineRenderingCreateInfo,
+    .layout = m_layout,
+    .renderPass = VK_NULL_HANDLE, // Zamiast tradycyjnego Render Passu
+    // ...
+};
 ```
 
 ---
@@ -50,10 +56,11 @@ Przekazywanie macierzy transformacji $MVP$ (Model-View-Projection) obliczanej pr
 
 Silnik rezerwuje w potoku przestrzeń o rozmiarze macierzy $4\times4$:
 ```cpp
-VkPushConstantRange pushConstantRange{};
-pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-pushConstantRange.offset     = 0;
-pushConstantRange.size       = sizeof(glm::mat4); // 64 bajty na macierz MVP
+VkPushConstantRange pushConstantRange{
+    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+    .offset     = 0,
+    .size       = sizeof(glm::mat4) // 64 bajty na macierz MVP
+};
 ```
 
 ---

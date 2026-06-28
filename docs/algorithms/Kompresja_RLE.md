@@ -2,7 +2,7 @@
 
 W celu zminimalizowania rozmiaru zajmowanego przez zapisane światy na dysku oraz przyspieszenia operacji wejścia-wyjścia (I/O), silnik [[api/VoxelEngine|VoxelEngine]] stosuje prosty i wydajny algorytm kompresji [[algorithms/Kompresja_RLE|RLE (Run-Length Encoding)]] do plików zapisów [[api/Chunk|chunków]] (`saves/world1/chunk_x_y_z.bin`).
 
-Implementacja tego algorytmu znajduje się w pliku [Chunk.cpp](file:///c:/dev/repos/VoxelEngine/src/world/Chunk.cpp) w metodach [[api/Chunk|Chunk]]::save() oraz [[api/Chunk|Chunk]]::load().
+Implementacja tego algorytmu znajduje się w pliku [Chunk.cpp](../../src/world/Chunk.cpp) w metodach [[api/Chunk|Chunk]]::save() oraz [[api/Chunk|Chunk]]::load().
 
 ---
 

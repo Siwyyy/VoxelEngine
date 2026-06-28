@@ -2,7 +2,7 @@
 
 Klasa **`World`** reprezentuje strukturę świata wokselowego składającego się z trójwymiarowej siatki [[api/Chunk|chunków]]. Odpowiada za asynchroniczne zarządzanie cyklem życia [[api/Chunk|chunków]] wokół [[api/Camera|gracza]] (ładowanie, generowanie terenu, budowanie siatek, usuwanie z pamięci), zapis i odczyt stanów na dysk oraz przeprowadzanie interakcji [[api/Camera|gracza]] z voxelami za pomocą [[algorithms/Raycasting_DDA|raycastingu DDA]].
 
-Definicja klasy znajduje się w pliku [World.h](file:///c:/dev/repos/VoxelEngine/src/world/World.h), a jej implementacja w [World.cpp](file:///c:/dev/repos/VoxelEngine/src/world/World.cpp).
+Definicja klasy znajduje się w pliku [World.h](../../src/world/World.h), a jej implementacja w [World.cpp](../../src/world/World.cpp).
 
 ---
 
@@ -72,11 +72,10 @@ private:
 
 ### 1. `void update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, float deltaTime)`
 Wywoływana w każdej klatce. Wykonuje następujące zadania:
-* **Asynchroniczne ładowanie**: Jeśli timer aktualizacji przekroczy próg (np. co 0.2 sekundy), oblicza pozycję gracza w koordynatach chunków i skanuje obszar w promieniu `m_renderDistance`.
-* Brakujące chunki są asynchronicznie przydzielane do puli wątków roboczych w celu załadowania z pliku lub wygenerowania terenu i budowy siatki.
-* **Czyszczenie chunków**: Zwalnia pamięć i zapisuje chunki, które wyszły poza zasięg widoczności gracza. Używa mutexu `m_deletionMutex` do wątkowo bezpiecznego dodawania ich do listy do usunięcia.
-* **Sprawdzanie przyszłości (`m_chunkFutures`)**: Sprawdza, czy wątki ukończyły generowanie chunków. Gotowe chunki są dodawane do `m_chunkMap`.
-* **Kolekcjonowanie aktywnych chunków**: Tworzy wektor `m_activeChunks` z chunków, które mają poprawne alokacje VRAM na GPU. Sortuje je **od najbliższego do najdalszego** (Front-to-Back) w celu optymalizacji Early-Z.
+* **Asynchroniczne ładowanie (ThreadPool)**: Co 0.2 sekundy oblicza pozycję gracza w koordynatach chunków i skanuje obszar w promieniu `m_renderDistance`. Brakujące chunki są asynchronicznie przydzielane do kolejki zadań `m_threadPool->enqueue` w celu ładowania/generowania w tle.
+* **Garbage Collection (Opóźnione usuwanie m_chunksToDelete)**: Chunki wychodzące poza zasięg renderowania są zapisywane na dysku na wątku pobocznym. Zwolnienie ich pamięci GPU z `MegaBuffer` jest jednak opóźniane o **3 klatki** przy użyciu kolejki `m_chunksToDelete` (zabezpieczonej przez `m_deletionMutex`), co zapobiega wyścigom CPU-GPU (gdy GPU wciąż pobiera dane geometrii z bufora klatki).
+* **Sprawdzanie przyszłości (`m_chunkFutures`)**: Skanuje przyszłości `std::future` zadań ładowania. Gotowe chunki przenoszone są do głównej mapy.
+* **Kolekcjonowanie aktywnych chunków**: Zbiera wskaźniki na chunki o poprawnych alokacjach GPU do wektora `m_activeChunks`. Sortuje je **od najbliższego do najdalszego** (Front-to-Back) w celu optymalnego wykorzystania mechanizmu Early-Z na GPU.
 
 ### 2. `void changeWorld(const std::string& newPath)`
 Zamyka bieżący świat, czyści pulę zadań w `ThreadPool`, czeka na bezczynność GPU, zapisuje wszystkie zmodyfikowane chunki na dysk i ładuje ścieżkę do nowego świata.

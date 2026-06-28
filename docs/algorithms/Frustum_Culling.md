@@ -2,7 +2,7 @@
 
 **Frustum Culling** jest kluczową optymalizacją w potoku renderowania 3D silnika [[api/VoxelEngine|VoxelEngine]]. Zapobiega wysyłaniu [[api/Chunk|chunków]], które znajdują się poza polem widzenia kamery, do przetwarzania przez układ graficzny. 
 
-Implementacja znajduje się w pliku [Frustum.cpp](file:///c:/dev/repos/VoxelEngine/src/core/Frustum.cpp) (klasy [[api/Frustum|Frustum]]).
+Implementacja znajduje się w pliku [Frustum.cpp](../../src/core/Frustum.cpp) (klasy [[api/Frustum|Frustum]]).
 
 ---
 

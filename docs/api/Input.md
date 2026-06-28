@@ -2,7 +2,7 @@
 
 Klasa **`Input`** oraz jej platformowa implementacja **`GLFWInput`** zarządzają wejściem od użytkownika (klawiatura, mysz). System ten opiera się na **wzorcu Singleton**, dzięki czemu stan klawiszy lub pozycję myszy można sprawdzić w dowolnym miejscu w kodzie silnika za pomocą prostego API statycznego.
 
-Definicja interfejsu znajduje się w pliku [Input.h](file:///c:/dev/repos/VoxelEngine/src/input/Input.h), klasa dziedzicząca w [GLFWInput.h](file:///c:/dev/repos/VoxelEngine/src/input/GLFWInput.h), a jej implementacja w [GLFWInput.cpp](file:///c:/dev/repos/VoxelEngine/src/input/GLFWInput.cpp).
+Definicja interfejsu znajduje się w pliku [Input.h](../../src/input/Input.h), klasa dziedzicząca w [GLFWInput.h](../../src/input/GLFWInput.h), a jej implementacja w [GLFWInput.cpp](../../src/input/GLFWInput.cpp).
 
 ---
 

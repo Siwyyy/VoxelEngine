@@ -2,7 +2,7 @@
 
 Klasa **`GraphicsPipeline`** odpowiada za konfigurację oraz tworzenie potoku graficznego (Graphics Pipeline Layout i Pipeline State Object) w interfejsie Vulkan. Integruje ładowanie shaderów SPIR-V, układ danych wierzchołkowych, konfigurację stanów stałych karty graficznej (rasteryzacja, test głębokości) oraz definiuje zakresy dynamicznego przesyłania stałych (Push Constants).
 
-Definicja klasy znajduje się w pliku [GraphicsPipeline.h](file:///c:/dev/repos/VoxelEngine/src/renderer/GraphicsPipeline.h), a jej implementacja w [GraphicsPipeline.cpp](file:///c:/dev/repos/VoxelEngine/src/renderer/GraphicsPipeline.cpp).
+Definicja klasy znajduje się w pliku [GraphicsPipeline.h](../../src/renderer/GraphicsPipeline.h), a jej implementacja w [GraphicsPipeline.cpp](../../src/renderer/GraphicsPipeline.cpp).
 
 ---
 

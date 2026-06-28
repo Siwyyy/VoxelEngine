@@ -1,6 +1,6 @@
 # 🌲 VoxelEngine - Skarbiec Wiedzy (Obsidian Vault)
 
-Witaj w dokumentacji **VoxelEngine**! Jest to wysokowydajny silnik voxelowy napisany w języku **C++20** z wykorzystaniem interfejsu API **Vulkan 1.3**. 
+Witaj w dokumentacji **VoxelEngine**! Jest to wysokowydajny silnik wokselowy napisany w języku **C++** z wykorzystaniem interfejsu API **Vulkan 1.3**. 
 
 Dokumentacja ta ma na celu pomóc Ci w zrozumieniu architektury silnika, przepływu danych oraz zaawansowanych technik optymalizacji graficznej i pamięciowej, które zostały w nim zaimplementowane.
 
@@ -12,7 +12,7 @@ Skarbiec został podzielony na kilka kluczowych sekcji. Poniżej znajduje się s
 
 ### 🎮 1. Architektura i Cykl Życia
 Zrozumienie, jak uruchamia się silnik, jak zarządza pętlą główną oraz w jaki sposób obsługuje stany aplikacji i gracza.
-* **[[01_Architektura_Ogolna]]** — Pętla silnika, klasa główna, cykl życia okna i zapisywanie stanów świata.
+* **[[01_Architektura_Ogolna]]** — Pętla silnika, klasa główna, cykl życia okna oraz rola klasy **[[api/Time|Time]]**.
 
 ### ⚡ 2. Silnik Graficzny (Vulkan)
 Opis nowoczesnego potoku graficznego opartego o Vulkan 1.3, w tym niestandardowe zarządzanie pamięcią VRAM i zaawansowane techniki rysowania.
@@ -33,6 +33,7 @@ Informacje o technikach, dzięki którym silnik potrafi renderować miliony voxe
 ### 📋 6. Dalszy Rozwój
 Spis funkcjonalności i ulepszeń planowanych do zaimplementowania w silniku.
 * **[[06_Roadmap]]** — Lista zadań (Roadmap), pomysły na fizykę, ulepszenia graficzne i rozwój świata.
+* **[[07_Koncepcja_Silnika_Hybrydowego]]** — Integracja terenu wokselowego z zewnętrznymi modelami, fizyką ciał sztywnych i fizyką sypkich materiałów.
 
 ---
 

@@ -4,7 +4,7 @@ W silnikach voxelowym sprawdzanie kolizji promienia (wzroku gracza) z siatką bl
 
 Pozwala on na iterowanie po kolejnych napotkanych voxelach wzdłuż promienia bez pomijania żadnego z nich.
 
-Implementacja znajduje się w pliku [World.cpp](file:///c:/dev/repos/VoxelEngine/src/world/World.cpp) w metodzie [[api/World|World]]::processPlayerInteraction().
+Implementacja znajduje się w pliku [World.cpp](../../src/world/World.cpp) w metodzie [[api/World|World]]::processPlayerInteraction().
 
 ---
 

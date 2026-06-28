@@ -2,7 +2,7 @@
 
 W tym kroku [[api/VoxelEngine|silnik graficzny]] inicjalizuje mechanizmy wyświetlania klatek: Swapchain (łańcuch wymiany obrazów), widoki obrazów (Image Views) oraz alokuje bufor głębokości (Depth Buffer) przy użyciu Vulkan Memory Allocator (VMA).
 
-Kod ten znajduje się w pliku [VulkanContext.cpp](file:///c:/dev/repos/VoxelEngine/src/renderer/VulkanContext.cpp) (klasy [[api/VulkanContext|VulkanContext]]).
+Kod ten znajduje się w pliku [VulkanContext.cpp](../../src/renderer/VulkanContext.cpp) (klasy [[api/VulkanContext|VulkanContext]]).
 
 ---
 

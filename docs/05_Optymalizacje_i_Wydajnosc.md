@@ -53,11 +53,12 @@ Zamiast tworzyć i usuwać bufory wierzchołków przy każdej modyfikacji terenu
 
 ---
 
-## 🧵 5. Praca Wielowątkowa (Asynchroniczny Teren)
+## 🧵 5. Praca Wielowątkowa (Asynchroniczny Teren) i Bezpieczeństwo Pamięci
 
-Wszelkie operacje wejścia-wyjścia (zapis/odczyt z dysku) oraz operacje CPU-intensive (generowanie szumu terenu, [[algorithms/Greedy_Meshing|greedy meshing]]) są delegowane do **puli wątków roboczych** (`ThreadPool` zdefiniowanej w [[api/World|World.h]]):
-* Główny wątek renderowania nie czeka na wygenerowanie nowego terenu.
-* [[api/Chunk|Chunk]] pojawia się na ekranie płynnie dopiero po pełnym wygenerowaniu i przesłaniu danych do [[api/MegaBuffer|MegaBuffer]] na wątku pobocznym.
+Wszelkie operacje wejścia-wyjścia (zapis/odczyt z dysku) oraz operacje CPU-intensive (generowanie szumu terenu, [[algorithms/Greedy_Meshing|greedy meshing]]) są delegowane do **puli wątków roboczych** (`ThreadPool` zdefiniowanej w `src/utils/ThreadPool.h` i używanej w [[api/World|World]]):
+* **Ograniczenie zasobów (Thread Bounding)**: Liczba wątków roboczych w puli jest ograniczona do `std::max(2, hardware_concurrency - 2)`. Zapobiega to masowemu tworzeniu wątków i eliminuje problem przepełnienia stosu (thread stack overflow) pod dużym obciążeniem asynchronicznego ładowania chunków (gdzie tablica bloków zajmuje ponad 512KB).
+* **Główny wątek renderowania** nie czeka na wygenerowanie nowego terenu. [[api/Chunk|Chunk]] pojawia się na ekranie płynnie dopiero po pełnym wygenerowaniu i przesłaniu danych do [[api/MegaBuffer|MegaBuffer]] na wątku pobocznym.
+* **Bezpieczna dealkokacja GPU (Garbage Collection)**: Aby zapobiec wyścigom CPU-GPU (gdy GPU wciąż odczytuje dane wierzchołków z bufora klatki, podczas gdy CPU próbuje je zwolnić), zwalnianie pamięci usuniętych chunków w [[api/MegaBuffer|MegaBuffer]] jest opóźniane o **3 klatki** w kolejce `m_chunksToDelete` (zdefiniowanej w [[api/World|World]]). Zapobiega to utracie urządzenia (Vulkan Device Loss).
 * **Early-Z Sorting**: Aktywne [[api/Chunk|chunki]] są sortowane od najbliższego do najdalszego względem gracza. Karta graficzna dzięki temu najpierw rysuje obiekty blisko kamery, a te położone dalej są odrzucane na etapie testu głębokości (Depth Test), co zapobiega zjawisku *overdraw* (wielokrotnego rysowania tych samych pikseli).
 
 ---

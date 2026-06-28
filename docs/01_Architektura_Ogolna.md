@@ -52,23 +52,35 @@ classDiagram
         -std::unique_ptr~MegaBuffer~ m_megaIndexBuffer
         +drawFrame(viewMatrix, chunks)
     }
+    class Time {
+        <<static>>
+        +init()
+        +tick()
+        +getDeltaTime() float
+        +getTime() float
+    }
+    class ThreadPool {
+        -std::vector~std::thread~ m_workers
+        +enqueue(f)
+    }
 
     VoxelEngine --> Window : Posiada i zarządza cyklem życia
     VoxelEngine --> Input : Korzysta z wejścia
     VoxelEngine --> Camera : Posiada (pozycja gracza)
     VoxelEngine --> World : Zarządza stanem voxelowym
     VoxelEngine --> VulkanContext : Posiada kontekst graficzny
+    VoxelEngine ..> Time : Inicjalizuje i odpytuje tick
     GLFWInput ..|> Input : Implementuje
     World --> VulkanContext : Referencja do alokacji buforów
     World --> Chunk : Zawiera i zarządza
+    World --> ThreadPool : Zleca zadania w tle
 ```
-
 ---
 
 ## 🔄 Cykl Życia Silnika i Pętla Główna (Game Loop)
 
 Cykl życia silnika jest zarządzany przez metodę `[[api/VoxelEngine|VoxelEngine]]::run()`:
-1. **Inicjalizacja**: Tworzone są obiekty `[[api/Window|Window]]`, `[[api/Input|Input]]` (GLFWInput), `[[api/Camera|Camera]]` oraz ładowany jest poprzedni stan gracza (`loadPlayerState`).
+1. **Inicjalizacja**: Inicjalizowane są globalne punkty czasowe za pomocą `[[api/Time|Time]]::init()`, tworzone są obiekty `[[api/Window|Window]]`, `[[api/Input|Input]]` (GLFWInput), `[[api/Camera|Camera]]` oraz ładowany jest poprzedni stan gracza (`loadPlayerState`).
 2. **Inicjalizacja Vulkan**: Wywoływana jest metoda `[[api/VulkanContext|VulkanContext]]::init()`, a następnie inicjalizowany jest obiekt `[[api/World|World]]`.
 3. **Pętla Główna**: Metoda `[[api/VoxelEngine|VoxelEngine]]::mainLoop()` działa do momentu zażądania zamknięcia okna.
 4. **Czyszczenie**: Bezpieczny zapis stanu gracza, czekanie na zakończenie pracy GPU (`deviceWaitIdle`), resetowanie obiektów świata oraz sprzątanie zasobów Vulkan.
@@ -79,7 +91,7 @@ Każde przejście pętli głównej (`mainLoop()`) wykonuje następujące operacj
 
 ```mermaid
 flowchart TD
-    Start([Początek Klatki]) --> Time[Oblicz Delta Time & zaktualizuj liczniki wydajności]
+    Start([Początek Klatki]) --> Time[Zaktualizuj czas gry za pomocą [[api/Time|Time]]::tick]
     Time --> Poll[Window::pollEvents - przetwórz zdarzenia systemu operacyjnego]
     Poll --> WorldLoad{Czy zażądało zmiany świata?}
     
@@ -89,7 +101,7 @@ flowchart TD
     
     WorldLoad -- Nie --> InputCheck{Czy kursor myszy jest zablokowany?}
     
-    InputCheck -- Tak (Gracz steruje) --> UpdateCam[Zaktualizuj pozycję kamery / ruch]
+    InputCheck -- Tak (Gracz steruje) --> UpdateCam[Zaktualizuj pozycję kamery z Delta Time]
     UpdateCam --> PlayerInteract[Przetwórz interakcję gracza - niszczenie/stawianie voxelów]
     PlayerInteract --> UpdateWorld[World::update - asynchroniczne ładowanie/usuwanie chunków]
     
@@ -120,10 +132,12 @@ Gracz posiada swoją pozycję oraz kąty obrotu kamery (Yaw i Pitch). Stan ten j
 
 ## 📁 Struktura Klas Pomocniczych
 * **[[api/Window|Window]]**: Opakowanie wokół GLFW. Zarządza szerokością, wysokością, tworzeniem obiektu typu `GLFWwindow*` i niszczeniem okna w destruktorze.
-* **[[api/Camera|Camera]]**: Implementuje kamerę typu Euler (Pitch, Yaw, Roll). Oblicza wektory `Front`, `Up` i `Right` na podstawie trygonometrii. Odpowiada za obliczanie macierzy widoku (View Matrix) za pomocą `glm::lookAt`.
+* **[[api/Camera|Camera]]**: Implementuje kamerę typu Euler (Pitch, Yaw, Roll). Oblicza wektory `Front`, `Up` i `Right` na podstawie trygonometrii. Odpowiada za obliczanie macierzy widoku (View Matrix) za pomocą `glm::lookAt` oraz skalowanie ruchu przy użyciu [[api/Time|Time::getDeltaTime()]].
 * **[[api/Frustum|Frustum]]**: Klasa wyodrębniająca 6 płaszczyzn bryły widoku ([[api/Frustum|frustum]]) na podstawie macierzy widoku-projekcji. Używana do testowania kolizji z AABB [[api/Chunk|chunków]] (Bounding Box) w celu eliminacji niewidocznych obiektów przed wysłaniem ich do karty graficznej ([[algorithms/Frustum_Culling|culling]]). Więcej informacji znajdziesz w sekcji **[[05_Optymalizacje_i_Wydajnosc]]**.
+* **[[api/Time|Time]]**: Statyczna klasa użytkowa, która mierzy Delta Time oraz czas całkowity silnika.
+* **ThreadPool**: (Opisana w [[api/World|World]]) Pula wątków roboczych typu MPMC (Multi-Producer Multi-Consumer) zarządzająca asynchronicznymi zadaniami generowania terenu i budowania siatek.
 
 ---
 
 > [!NOTE]
-> Wszystkie krytyczne błędy podczas cyklu życia silnika są łapane w funkcji `main` (`main.cpp`), a informacja o nich wypisywana jest na standardowy strumień błędów `std::cerr`. Zapewnia to bezpieczne wyjście bez pozostawiania "wiszących" procesów w tle.
+> Wszystkie krytyczne błędy podczas cyklu życia silnika są przechwytywane w funkcji `main` ([main.cpp](../../src/main.cpp)), a informacja o nich wypisywana jest na standardowy strumień błędów. Zapewnia to bezpieczne wyjście bez pozostawiania "wiszących" procesów w tle.

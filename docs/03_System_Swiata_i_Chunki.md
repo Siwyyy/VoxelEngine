@@ -22,18 +22,18 @@ Wielkość fizyczna pojedynczego voxela wynosi **0.05 jednostki** świata gry.
 
 ## 🧵 2. Asynchroniczny Potok Streamingowy i Pula Wątków
 
-Generowanie terenu i budowanie siatek wierzchołków (meshing) to operacje kosztowne obliczeniowo. Aby zapobiec zamrażaniu pętli głównej gry, silnik używa dedykowanej puli wątków **`ThreadPool`** (domyślnie 4 wątki robocze).
+Generowanie terenu i budowanie siatek wierzchołków (meshing) to operacje kosztowne obliczeniowo. Aby zapobiec zamrażaniu pętli głównej gry, silnik używa dedykowanej puli wątków **`ThreadPool`** (ograniczonej sprzętowo do `std::max(2, hardware_concurrency - 2)` wątków roboczych, co zapobiega przepełnieniu stosu przy wielu alokacjach).
 
 ### Przepływ Ładowania Chunku:
 1. **Detekcja odległości**: W każdym kroku [[api/World|World]]::update obliczana jest odległość w [[api/Chunk|chunkach]] od gracza.
 2. **Kolejkowanie w tle**: [[api/Chunk|Chunki]] w zasięgu renderowania (`m_renderDistance`), które nie istnieją w `m_chunkMap` (zarządzanej w [[api/World|World]]), są zlecane do załadowania/wygenerowania na puli wątków:
    ```cpp
-   m_chunkFutures[coord] = m_threadPool->enqueue([this, coord]() {
-       // Operacja ładowania z dysku lub generowania terenu i budowania mesha
+   m_chunkFutures[coord] = m_threadPool->enqueue([pos, vb, ib, filepath]() {
+       // Asynchroniczne ładowanie z dysku, generowanie szumu terenu i budowanie siatki
    });
    ```
-3. **Synchronizacja**: W [[api/VoxelEngine|pętli głównej]] wyniki z wątków pobierane są asynchronicznie za pomocą `wait_for(0) == std::future_status::ready` bez blokowania klatki.
-4. **Czyszczenie (Garbage Collection)**: [[api/Chunk|Chunki]], które znajdą się poza zasięgiem renderowania, są zapisywane na dysku na wątku pobocznym, a ich pamięć GPU ([[api/MegaBuffer|MegaBuffer]]) jest uwalniana w bezpieczny sposób (przez dodanie do kontenera `m_chunksToDelete` i usunięcie z opóźnieniem).
+3. **Synchronizacja**: W [[api/VoxelEngine|pętli głównej]] wyniki z wątków pobierane są asynchronicznie za pomocą sprawdzenia gotowości obiektów `std::future`.
+4. **Czyszczenie i Garbage Collection**: [[api/Chunk|Chunki]], które znajdą się poza zasięgiem renderowania, są kolejkowane do zapisu na dysku. Aby zapobiec wyścigom CPU-GPU (gdy GPU wciąż odczytuje dane wierzchołków, które CPU próbuje usunąć), alokacja [[api/MegaBuffer|MegaBuffer]] jest uwalniana z opóźnieniem **3 klatek** za pomocą kolejki `m_chunksToDelete`.
 
 ---
 
@@ -80,6 +80,6 @@ Kiedy gracz naciska przycisk myszy w celu usunięcia lub postawienia bloku, siln
 1. **Transformacja współrzędnych**: Pozycja kamery jest konwertowana na koordynaty voxelowe gry (skalowanie przez `1 / 0.05f`).
 2. **Krok Raycastingu**: Algorytm iteracyjnie przechodzi po siatce bloków, sprawdzając kolizję z najbliższymi ścianami voxeli (krok po krokach `stepX`, `stepY`, `stepZ` na podstawie odległości promienia).
 3. **Modyfikacja**:
-   * **Lewy przycisk**: Ustawia trafiony blok na `[[api/BlockType|BlockType]]::Air` (niszczenie).
-   * **Prawy przycisk**: Ustawia blok przyległy do trafionej ściany na `[[api/BlockType|BlockType]]::Grass` (budowanie).
+   * **Lewy przycisk**: Ustawia trafiony blok na `BlockType::Air` (niszczenie).
+   * **Prawy przycisk**: Ustawia blok przyległy do trafionej ściany na `BlockType::Stone` (budowanie).
 4. **Oznaczenie jako Dirty**: Zmodyfikowany [[api/Chunk|chunk]] oraz [[api/Chunk|chunki]] sąsiednie (w przypadku modyfikacji na granicy) są oznaczane jako `m_isDirty = true` i `m_isSaveDirty = true`, co wymusza natychmiastową przebudowę ich siatki geometrycznej i przygotowanie do zapisu na dysku.

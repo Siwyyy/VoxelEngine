@@ -2,7 +2,7 @@
 
 Klasa **`Camera`** reprezentuje wirtualnego obserwatora w trójwymiarowej przestrzeni gry, pełniąc jednocześnie rolę gracza. Implementuje system kamery typu **Euler Angles** (Pitch i Yaw) w przestrzeni o 6 stopniach swobody (6DoF) i wylicza macierz widoku (View Matrix) dla renderera.
 
-Definicja klasy znajduje się w pliku [Camera.h](file:///c:/dev/repos/VoxelEngine/src/core/Camera.h), a jej implementacja w [Camera.cpp](file:///c:/dev/repos/VoxelEngine/src/core/Camera.cpp).
+Definicja klasy znajduje się w pliku [Camera.h](../../src/core/Camera.h), a jej implementacja w [Camera.cpp](../../src/core/Camera.cpp).
 
 ---
 

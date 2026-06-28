@@ -2,7 +2,7 @@
 
 Algorytm **Greedy Meshing** jest jedną z najważniejszych optymalizacji w silniku [[api/VoxelEngine|VoxelEngine]]. Odpowiada za scalanie sąsiednich ścian voxelów tego samego typu w większe prostokąty (quady). Pozwala to na dramatyczne zmniejszenie liczby wierzchołków i indeksów przesyłanych do pamięci GPU.
 
-Implementacja tego algorytmu znajduje się w pliku [Chunk.cpp](file:///c:/dev/repos/VoxelEngine/src/world/Chunk.cpp) w metodzie [[api/Chunk|Chunk]]::buildMesh().
+Implementacja tego algorytmu znajduje się w pliku [Chunk.cpp](../../src/world/Chunk.cpp) w metodzie [[api/Chunk|Chunk]]::buildMesh().
 
 ---
 

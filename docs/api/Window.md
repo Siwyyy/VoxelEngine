@@ -2,7 +2,7 @@
 
 Klasa **`Window`** to lekka klasa opakowująca bibliotekę GLFW. Odpowiada za utworzenie okna aplikacji, zarządzanie kontekstem systemu operacyjnego, przetwarzanie zdarzeń systemowych oraz integrację z API Vulkan.
 
-Definicja klasy znajduje się w pliku [Window.h](file:///c:/dev/repos/VoxelEngine/src/core/Window.h), a jej implementacja w [Window.cpp](file:///c:/dev/repos/VoxelEngine/src/core/Window.cpp).
+Definicja klasy znajduje się w pliku [Window.h](../../src/core/Window.h), a jej implementacja w [Window.cpp](../../src/core/Window.cpp).
 
 ---
 

@@ -2,7 +2,7 @@
 
 W ostatnim kroku inicjalizacji [[api/VoxelEngine|silnika graficznego Vulkan]] konfigurowane są obiekty służące do przesyłania poleceń do procesora graficznego, struktury synchronizacyjne procesor-karta graficzna, a także wbudowana diagnostyka czasu GPU i nakładka Dear ImGui.
 
-Kod ten znajduje się w pliku [VulkanContext.cpp](file:///c:/dev/repos/VoxelEngine/src/renderer/VulkanContext.cpp) (klasy [[api/VulkanContext|VulkanContext]]).
+Kod ten znajduje się w pliku [VulkanContext.cpp](../../src/renderer/VulkanContext.cpp) (klasy [[api/VulkanContext|VulkanContext]]).
 
 ---
 
@@ -12,10 +12,11 @@ Procesor nie wysyła poleceń do karty graficznej pojedynczo. Zamiast tego zapis
 
 * **Pula poleceń (`VkCommandPool`)**: Rezerwuje pamięć dla buforów i powiązana jest z wybraną rodziną kolejek (Graphics Queue):
   ```cpp
-  VkCommandPoolCreateInfo poolInfo{};
-  poolInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-  poolInfo.flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-  poolInfo.queueFamilyIndex = queueFamily;
+  VkCommandPoolCreateInfo poolInfo{
+      .sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+      .flags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+      .queueFamilyIndex = queueFamily
+  };
   ```
   Flaga `VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT` pozwala na wielokrotne resetowanie i ponowne nagrywanie pojedynczych buforów poleceń w każdej klatce.
 * **Bufory poleceń (`m_commandBuffers`)**: Silnik alokuje dwa buforów poleceń (dla podwójnego buforowania, `MAX_FRAMES_IN_FLIGHT = 2`), po jednym dla każdej przetwarzanej klatki w locie.
@@ -41,8 +42,21 @@ Silnik tworzy trzy typy struktur synchronizacyjnych:
 
 W celu obsługi wydajnego rysowania tysięcy chunków w jednym wywołaniu (technika [[02_Renderowanie_Vulkan|Multi-Draw Indirect (MDI)]]), silnik alokuje dedykowany bufor poleceń rysowania pośredniego:
 
-* **Inicjalizacja**: Bufor `m_indirectBuffer` jest alokowany przy użyciu VMA z flagą użycia jako bufor komend pośrednich (`VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT`).
-* **Mapowanie**: Aby uniknąć ciągłego narzutu ponownego mapowania pamięci w każdej klatce, stosuje się flagę `VMA_ALLOCATION_CREATE_MAPPED_BIT` z flagą zapisu `VMA_MEMORY_USAGE_CPU_TO_GPU`. Dzięki temu wskaźnik do pamięci GPU `m_indirectMappedData` jest przypisywany raz i pozostaje stale dostępny dla procesora.
+* **Inicjalizacja**: Bufor `m_indirectBuffer` jest alokowany przy użyciu VMA z flagą użycia jako bufor komend pośrednich (`VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT`):
+  ```cpp
+  VkBufferCreateInfo indirectInfo{
+      .sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+      .size        = sizeof(VkDrawIndexedIndirectCommand) * m_maxIndirectCommands,
+      .usage       = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
+      .sharingMode = VK_SHARING_MODE_EXCLUSIVE
+  };
+  VmaAllocationCreateInfo indirectAllocInfo{
+      .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+      .usage = VMA_MEMORY_USAGE_CPU_TO_GPU
+  };
+  vmaCreateBuffer(m_allocator, &indirectInfo, &indirectAllocInfo, &m_indirectBuffer, &m_indirectBufferAllocation, &allocInfo);
+  ```
+* **Mapowanie**: Aby uniknąć ciągłego narzutu ponownego mapowania pamięci w każdej klatce, stosuje się flagę `VMA_ALLOCATION_CREATE_MAPPED_BIT` z flagą zapisu `VMA_MEMORY_USAGE_CPU_TO_GPU`. Dzięki temu wskaźnik do pamięci GPU `m_indirectMappedData = allocInfo.pMappedData` jest przypisywany raz i pozostaje stale dostępny dla procesora.
 * **Rozmiar**: Zarezerwowana przestrzeń pozwala na przesłanie do 30 000 komend rysowania (`sizeof(VkDrawIndexedIndirectCommand) * m_maxIndirectCommands`), co w zupełności wystarcza dla renderowania rozległego świata voxelowego.
 
 Więcej informacji o samym rysowaniu MDI i integracji z globalnymi buforami [[api/MegaBuffer|MegaBuffer]] znajdziesz w rozdziale **[[02_Renderowanie_Vulkan|Renderowanie Vulkan]]**.

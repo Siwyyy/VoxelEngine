@@ -1,8 +1,8 @@
 # Klasa VoxelEngine
 
-Klasa **`VoxelEngine`** jest główną klasą kontrolną całego silnika. Odpowiada za orkiestrację cyklu życia gry, w tym inicjalizację [[api/Window|okna]], [[api/Input|wejścia]], [[api/Camera|kamery]], [[api/World|systemu świata]], zarządzanie pętlą główną (Game Loop) oraz wyświetlanie interfejsu diagnostycznego za pomocą Dear ImGui.
+Klasa **`VoxelEngine`** jest główną klasą kontrolną całego silnika. Odpowiada za orkiestrację cyklu życia gry, w tym inicjalizację [[api/Window|okna]], [[api/Input|wejścia]], [[api/Camera|kamery]], [[api/World|systemu świata]], zarządzanie pętlą główną (Game Loop) z synchronizacją czasu klatki za pomocą klasy [[api/Time|Time]], oraz wyświetlanie interfejsu diagnostycznego za pomocą Dear ImGui.
 
-Definicja klasy znajduje się w pliku [VoxelEngine.h](file:///c:/dev/repos/VoxelEngine/src/core/VoxelEngine.h), a jej implementacja w [VoxelEngine.cpp](file:///c:/dev/repos/VoxelEngine/src/core/VoxelEngine.cpp).
+Definicja klasy znajduje się w pliku [VoxelEngine.h](../../src/core/VoxelEngine.h), a jej implementacja w [VoxelEngine.cpp](../../src/core/VoxelEngine.cpp).
 
 ---
 
@@ -27,8 +27,6 @@ private:
     std::unique_ptr<Camera> m_camera;
     std::unique_ptr<World> m_world;
     VulkanContext m_vulkanContext;
-
-    std::chrono::time_point<std::chrono::high_resolution_clock> m_lastTime;
 
     float m_clickCooldown      = 0.0f;
     bool m_cursorEnabled       = false;
@@ -59,15 +57,16 @@ private:
 ## 🔑 Kluczowe Metody i Ich Rola
 
 ### 1. `void run()`
-Główny punkt startowy silnika wywoływany w funkcji `main()`. Uruchamia sekwencyjnie inicjalizację Vulkan (`initVulkan`), pętlę klatki (`mainLoop`), a po zakończeniu sprząta zasoby (`cleanup`).
+Główny punkt startowy silnika wywoływany w funkcji `main()`. Inicjalizuje punkty czasowe za pomocą `[[api/Time|Time]]::init()`, uruchamia sekwencyjnie inicjalizację Vulkan (`initVulkan`), pętlę klatki (`mainLoop`), a po zakończeniu sprząta zasoby (`cleanup`).
 
 ### 2. `void mainLoop()`
 Pętla gry działająca w każdej klatce. Do jej zadań należy:
-* Obliczanie czasu klatki (`deltaTime`) oraz aktualizowanie tablic wydajności (`m_frameTimes`, `m_gpuFrameTimes`).
+* Odświeżanie czasu gry i obliczanie Delta Time za pomocą `[[api/Time|Time]]::tick()` na początku każdej klatki.
+* Aktualizowanie tablic wydajności (`m_frameTimes`, `m_gpuFrameTimes`) z czasem Delta Time dostarczanym przez klasę [[api/Time|Time]].
 * Obsługa żądania przeładowania świata (`switchWorld`) oraz asynchronicznego pomiaru wagi zapisu na dysku (`m_worldSizeFuture`).
 * Zbieranie zdarzeń z [[api/Window|okna]] (`Window::pollEvents`).
 * Wykrywanie klawiszy funkcyjnych (np. `ESC` wyjście, `TAB` zwalnianie kursora myszy).
-* Aktualizacja [[api/Camera|kamery]] (`Camera::update`) i [[api/World|świata]] (`World::update`) pod warunkiem przechwyconego kursora.
+* Aktualizacja [[api/Camera|kamery]] (`Camera::update`) i [[api/World|świata]] (`World::update`) pod warunkiem przechwyconego kursora, z wykorzystaniem `Time::getDeltaTime()`.
 * Rysowanie interfejsu debugowania Dear ImGui oraz wywołanie renderowania sceny za pomocą `[[api/VulkanContext|VulkanContext]]::drawFrame`.
 
 ### 3. `void switchWorld(const std::string& worldName)`
@@ -88,3 +87,4 @@ Odpowiada za binarną serializację pozycji [[api/Camera|kamery]] gracza (`glm::
 * **[[api/Camera|Camera]]** — przechowuje instancję kamery jako reprezentację gracza w świecie.
 * **[[api/World|World]]** — zarządza stanem bloków wokselowych, wątkami oraz raycastingiem.
 * **[[api/VulkanContext|VulkanContext]]** — zarządza potokiem renderowania Vulkan.
+* **[[api/Time|Time]]** — silnik orkiestruje wywołania tick na początku klatki i odpytuje klasę o aktualne czasy klatek.
