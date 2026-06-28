@@ -1,10 +1,13 @@
+#include <print>
+
 #include "core/VoxelEngine.h"
+
 
 int main()
 {
     try
     {
-        VoxelEngine engine;
+        voxl::VoxelEngine engine;
         engine.run();
     }
     catch (const std::exception& e)

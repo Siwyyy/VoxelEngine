@@ -5,441 +5,446 @@
 
 #include <FastNoiseLite/FastNoiseLite.h>
 
-static const std::array<std::array<glm::vec3, 4>, 6> FACE_VERTICES = {{
-    // Front
-    {{ {-0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f} }},
-    // Back
-    {{ {0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, -0.5f} }},
-    // Left
-    {{ {-0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, -0.5f} }},
-    // Right
-    {{ {0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, 0.5f} }},
-    // Top
-    {{ {-0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f} }},
-    // Bottom
-    {{ {-0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f} }}
-}};
-
-
-Chunk::Chunk(const glm::vec3 position, MegaBuffer* vb, MegaBuffer* ib)
-    : m_position(position), m_megaVertexBuffer(vb), m_megaIndexBuffer(ib)
+namespace voxl
 {
-    m_noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
-    m_noise.SetFrequency(0.003f); // Bardzo niska częstotliwość dla długich, łagodnych wzgórz
-
-    for (auto& slice: m_blocks) for (auto& row: slice) for (auto& block: row) block = BlockType::Air;
-}
-
-Chunk::~Chunk()
-{
-    if (m_vertexAllocation.valid)
-    {
-        m_megaVertexBuffer->free(m_vertexAllocation);
-    }
-    if (m_indexAllocation.valid)
-    {
-        m_megaIndexBuffer->free(m_indexAllocation);
-    }
-}
-
-void Chunk::generateTerrain()
-{
-    for (int x = 0; x < CHUNK_SIZE; ++x)
-    {
-        for (int z = 0; z < CHUNK_SIZE; ++z)
+    static const std::array<std::array<glm::vec3, 4>, 6> FACE_VERTICES = {
         {
-            const float globalX = m_position.x + static_cast<float>(x);
-            const float globalZ = m_position.z + static_cast<float>(z);
+            // Front
+            {{{-0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}}},
+            // Back
+            {{{0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}}},
+            // Left
+            {{{-0.5f, -0.5f, -0.5f}, {-0.5f, -0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, -0.5f}}},
+            // Right
+            {{{0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f, 0.5f, -0.5f}, {0.5f, 0.5f, 0.5f}}},
+            // Top
+            {{{-0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {0.5f, 0.5f, -0.5f}, {-0.5f, 0.5f, -0.5f}}},
+            // Bottom
+            {{{-0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, -0.5f}, {0.5f, -0.5f, 0.5f}, {-0.5f, -0.5f, 0.5f}}}
+        }
+    };
 
-            const float noiseValue  = m_noise.GetNoise(globalX, globalZ);
-            const int terrainHeight = static_cast<int>((noiseValue + 1.0f) * 0.5f * 60.0f) + 15;
 
-            for (int y = 0; y < CHUNK_SIZE; ++y)
-            {
-                const int globalY = static_cast<int>(std::round(m_position.y)) + y;
+    Chunk::Chunk(const glm::vec3 position, MegaBuffer* vb, MegaBuffer* ib)
+        : m_position(position), m_megaVertexBuffer(vb), m_megaIndexBuffer(ib)
+    {
+        m_noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
+        m_noise.SetFrequency(0.003f); // Bardzo niska częstotliwość dla długich, łagodnych wzgórz
 
-                if (globalY == terrainHeight - 1)
-                {
-                    m_blocks[x][y][z] = BlockType::Grass;
-                }
-                else if (globalY > terrainHeight - 4 && globalY < terrainHeight)
-                {
-                    m_blocks[x][y][z] = BlockType::Dirt;
-                }
-                else if (globalY < terrainHeight)
-                {
-                    m_blocks[x][y][z] = BlockType::Stone;
-                }
-                else
-                {
-                    m_blocks[x][y][z] = BlockType::Air;
-                }
-            }
+        for (auto& slice: m_blocks) for (auto& row: slice) for (auto& block: row) block = BlockType::Air;
+    }
+
+    Chunk::~Chunk()
+    {
+        if (m_vertexAllocation.valid)
+        {
+            m_megaVertexBuffer->free(m_vertexAllocation);
+        }
+        if (m_indexAllocation.valid)
+        {
+            m_megaIndexBuffer->free(m_indexAllocation);
         }
     }
 
-
-    m_isDirty     = true;
-    m_isSaveDirty = true;
-}
-
-void Chunk::buildMesh()
-{
-    if (m_vertexAllocation.valid)
+    void Chunk::generateTerrain()
     {
-        m_megaVertexBuffer->free(m_vertexAllocation);
-        m_vertexAllocation.valid = false;
-    }
-    if (m_indexAllocation.valid)
-    {
-        m_megaIndexBuffer->free(m_indexAllocation);
-        m_indexAllocation.valid = false;
-    }
-
-    std::vector<Vertex> vertices;
-    std::vector<uint32_t> indices;
-
-    for (int d = 0; d < 3; ++d)
-    {
-        int i, j, k, l, w, h;
-        int u    = (d + 1) % 3;
-        int v    = (d + 2) % 3;
-        std::array<int, 3> x = {0, 0, 0};
-        std::array<int, 3> q = {0, 0, 0};
-        q[d]     = 1;
-
-        std::array<int, 3> dims = {CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE};
-        int dim_d   = dims[d];
-        int dim_u   = dims[u];
-        int dim_v   = dims[v];
-
-        struct MaskCell
+        for (int x = 0; x < CHUNK_SIZE; ++x)
         {
-            Block block;
-            bool backFace{};
-
-            bool operator==(const MaskCell& other) const
+            for (int z = 0; z < CHUNK_SIZE; ++z)
             {
-                return block == other.block && backFace == other.backFace;
-            }
+                const float globalX = m_position.x + static_cast<float>(x);
+                const float globalZ = m_position.z + static_cast<float>(z);
 
-            bool operator!=(const MaskCell& other) const
-            {
-                return !(*this == other);
-            }
-        };
+                const float noiseValue  = m_noise.GetNoise(globalX, globalZ);
+                const int terrainHeight = static_cast<int>((noiseValue + 1.0f) * 0.5f * 60.0f) + 15;
 
-        std::array<std::array<MaskCell, CHUNK_SIZE>, CHUNK_SIZE> mask{};
-
-        for (x[d] = -1; x[d] < dim_d; ++x[d])
-        {
-            // Compute Mask
-            for (x[v] = 0; x[v] < dim_v; ++x[v])
-            {
-                for (x[u] = 0; x[u] < dim_u; ++x[u])
+                for (int y = 0; y < CHUNK_SIZE; ++y)
                 {
-                    Block blockCurrent = getBlock(x[0], x[1], x[2]);
-                    Block blockCompare = getBlock(x[0] + q[0], x[1] + q[1], x[2] + q[2]);
+                    const int globalY = static_cast<int>(std::round(m_position.y)) + y;
 
-                    bool currentSolid = blockCurrent != BlockType::Air;
-                    bool compareSolid = blockCompare != BlockType::Air;
-
-                    if (currentSolid != compareSolid)
+                    if (globalY == terrainHeight - 1)
                     {
-                        bool isBackFace  = !currentSolid;
-                        mask[x[v]][x[u]] = {
-                            .block = currentSolid ? blockCurrent : blockCompare, .backFace = isBackFace
-                        };
+                        m_blocks[x][y][z] = BlockType::Grass;
+                    }
+                    else if (globalY > terrainHeight - 4 && globalY < terrainHeight)
+                    {
+                        m_blocks[x][y][z] = BlockType::Dirt;
+                    }
+                    else if (globalY < terrainHeight)
+                    {
+                        m_blocks[x][y][z] = BlockType::Stone;
                     }
                     else
                     {
-                        mask[x[v]][x[u]] = {.block = BlockType::Air, .backFace = false};
+                        m_blocks[x][y][z] = BlockType::Air;
                     }
                 }
             }
+        }
 
-            // Generate Mesh from Mask
-            for (j = 0; j < dim_v; ++j)
+
+        m_isDirty     = true;
+        m_isSaveDirty = true;
+    }
+
+    void Chunk::buildMesh()
+    {
+        if (m_vertexAllocation.valid)
+        {
+            m_megaVertexBuffer->free(m_vertexAllocation);
+            m_vertexAllocation.valid = false;
+        }
+        if (m_indexAllocation.valid)
+        {
+            m_megaIndexBuffer->free(m_indexAllocation);
+            m_indexAllocation.valid = false;
+        }
+
+        std::vector<Vertex> vertices;
+        std::vector<uint32_t> indices;
+
+        for (int d = 0; d < 3; ++d)
+        {
+            int i, j, k, l, w, h;
+            int u                   = (d + 1) % 3;
+            int v                   = (d + 2) % 3;
+            std::array < int, 3 > x = {0, 0, 0};
+            std::array < int, 3 > q = {0, 0, 0};
+            q[d]                    = 1;
+
+            std::array < int, 3 > dims = {CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE};
+            int dim_d                  = dims[d];
+            int dim_u                  = dims[u];
+            int dim_v                  = dims[v];
+
+            struct MaskCell
             {
-                for (i = 0; i < dim_u;)
+                Block block;
+                bool backFace{};
+
+                bool operator==(const MaskCell& other) const
                 {
-                    MaskCell c = mask[j][i];
-                    if (c.block != BlockType::Air)
+                    return block == other.block && backFace == other.backFace;
+                }
+
+                bool operator!=(const MaskCell& other) const
+                {
+                    return !(*this == other);
+                }
+            };
+
+            std::array<std::array<MaskCell, CHUNK_SIZE>, CHUNK_SIZE> mask{};
+
+            for (x[d] = -1; x[d] < dim_d; ++x[d])
+            {
+                // Compute Mask
+                for (x[v] = 0; x[v] < dim_v; ++x[v])
+                {
+                    for (x[u] = 0; x[u] < dim_u; ++x[u])
                     {
-                        for (w = 1; i + w < dim_u && mask[j][i + w] == c; ++w) {}
+                        Block blockCurrent = getBlock(x[0], x[1], x[2]);
+                        Block blockCompare = getBlock(x[0] + q[0], x[1] + q[1], x[2] + q[2]);
 
-                        bool done = false;
-                        for (h = 1; j + h < dim_v; ++h)
+                        bool currentSolid = blockCurrent != BlockType::Air;
+                        bool compareSolid = blockCompare != BlockType::Air;
+
+                        if (currentSolid != compareSolid)
                         {
-                            for (k = 0; k < w; ++k)
-                            {
-                                if (mask[j + h][i + k] != c)
-                                {
-                                    done = true;
-                                    break;
-                                }
-                            }
-                            if (done) break;
-                        }
-
-                        x[u] = i;
-                        x[v] = j;
-
-                        std::array<int, 3> du = {0, 0, 0};
-                        du[u]     = w;
-                        std::array<int, 3> dv = {0, 0, 0};
-                        dv[v]     = h;
-
-                        glm::vec3 v1(x[0], x[1], x[2]);
-                        v1[d] += 1.0f;
-                        glm::vec3 v2(x[0] + du[0], x[1] + du[1], x[2] + du[2]);
-                        v2[d] += 1.0f;
-                        glm::vec3 v3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
-                        v3[d] += 1.0f;
-                        glm::vec3 v4(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
-                        v4[d] += 1.0f;
-
-                        glm::vec3 offset = m_position - glm::vec3(0.5f);
-                        v1               += offset;
-                        v2               += offset;
-                        v3               += offset;
-                        v4               += offset;
-
-                        int faceIndex = 0;
-                        if (d == 0) faceIndex = c.backFace ? 2 : 3;
-                        else if (d == 1) faceIndex = c.backFace ? 5 : 4;
-                        else faceIndex             = c.backFace ? 1 : 0;
-
-                        glm::vec3 color;
-                        switch (c.block.type)
-                        {
-                            case BlockType::Grass: color = {0.2f, 0.8f, 0.2f};
-                                break;
-                            case BlockType::Dirt: color = {0.5f, 0.3f, 0.1f};
-                                break;
-                            case BlockType::Stone: color = {0.5f, 0.5f, 0.5f};
-                                break;
-                            case BlockType::Water: color = {0.2f, 0.4f, 0.9f};
-                                break;
-                            case BlockType::Air: color = {1.0f, 1.0f, 1.0f};
-                                break;
-                        }
-
-                        if (faceIndex == 0 || faceIndex == 1) color *= 0.8f;
-                        else if (faceIndex == 2 || faceIndex == 3) color *= 0.6f;
-                        else if (faceIndex == 5) color *= 0.4f;
-
-                        auto startIndex = static_cast<uint32_t>(vertices.size());
-
-                        if (!c.backFace)
-                        {
-                            vertices.push_back(Vertex{.pos = v1, .color = color});
-                            vertices.push_back(Vertex{.pos = v2, .color = color});
-                            vertices.push_back(Vertex{.pos = v3, .color = color});
-                            vertices.push_back(Vertex{.pos = v4, .color = color});
+                            bool isBackFace  = !currentSolid;
+                            mask[x[v]][x[u]] = {
+                                .block = currentSolid ? blockCurrent : blockCompare, .backFace = isBackFace
+                            };
                         }
                         else
                         {
-                            vertices.push_back(Vertex{.pos = v1, .color = color});
-                            vertices.push_back(Vertex{.pos = v4, .color = color});
-                            vertices.push_back(Vertex{.pos = v3, .color = color});
-                            vertices.push_back(Vertex{.pos = v2, .color = color});
+                            mask[x[v]][x[u]] = {.block = BlockType::Air, .backFace = false};
                         }
+                    }
+                }
 
-                        indices.insert(indices.end(), {
-                                           startIndex + 0, startIndex + 1, startIndex + 2,
-                                           startIndex + 2, startIndex + 3, startIndex + 0
-                                       });
-
-                        for (l = 0; l < h; ++l)
+                // Generate Mesh from Mask
+                for (j = 0; j < dim_v; ++j)
+                {
+                    for (i = 0; i < dim_u;)
+                    {
+                        MaskCell c = mask[j][i];
+                        if (c.block != BlockType::Air)
                         {
-                            for (k = 0; k < w; ++k)
-                            {
-                                mask[j + l][i + k] = {.block = BlockType::Air, .backFace = false};
-                            }
-                        }
+                            for (w = 1; i + w < dim_u && mask[j][i + w] == c; ++w) {}
 
-                        i += w;
+                            bool done = false;
+                            for (h = 1; j + h < dim_v; ++h)
+                            {
+                                for (k = 0; k < w; ++k)
+                                {
+                                    if (mask[j + h][i + k] != c)
+                                    {
+                                        done = true;
+                                        break;
+                                    }
+                                }
+                                if (done) break;
+                            }
+
+                            x[u] = i;
+                            x[v] = j;
+
+                            std::array < int, 3 > du = {0, 0, 0};
+                            du[u]                    = w;
+                            std::array < int, 3 > dv = {0, 0, 0};
+                            dv[v]                    = h;
+
+                            glm::vec3 v1(x[0], x[1], x[2]);
+                            v1[d] += 1.0f;
+                            glm::vec3 v2(x[0] + du[0], x[1] + du[1], x[2] + du[2]);
+                            v2[d] += 1.0f;
+                            glm::vec3 v3(x[0] + du[0] + dv[0], x[1] + du[1] + dv[1], x[2] + du[2] + dv[2]);
+                            v3[d] += 1.0f;
+                            glm::vec3 v4(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]);
+                            v4[d] += 1.0f;
+
+                            glm::vec3 offset = m_position - glm::vec3(0.5f);
+                            v1               += offset;
+                            v2               += offset;
+                            v3               += offset;
+                            v4               += offset;
+
+                            int faceIndex = 0;
+                            if (d == 0) faceIndex = c.backFace ? 2 : 3;
+                            else if (d == 1) faceIndex = c.backFace ? 5 : 4;
+                            else faceIndex             = c.backFace ? 1 : 0;
+
+                            glm::vec3 color;
+                            switch (c.block.type)
+                            {
+                                case BlockType::Grass: color = {0.2f, 0.8f, 0.2f};
+                                    break;
+                                case BlockType::Dirt: color = {0.5f, 0.3f, 0.1f};
+                                    break;
+                                case BlockType::Stone: color = {0.5f, 0.5f, 0.5f};
+                                    break;
+                                case BlockType::Water: color = {0.2f, 0.4f, 0.9f};
+                                    break;
+                                case BlockType::Air: color = {1.0f, 1.0f, 1.0f};
+                                    break;
+                            }
+
+                            if (faceIndex == 0 || faceIndex == 1) color *= 0.8f;
+                            else if (faceIndex == 2 || faceIndex == 3) color *= 0.6f;
+                            else if (faceIndex == 5) color *= 0.4f;
+
+                            auto startIndex = static_cast<uint32_t>(vertices.size());
+
+                            if (!c.backFace)
+                            {
+                                vertices.push_back(Vertex{.pos = v1, .color = color});
+                                vertices.push_back(Vertex{.pos = v2, .color = color});
+                                vertices.push_back(Vertex{.pos = v3, .color = color});
+                                vertices.push_back(Vertex{.pos = v4, .color = color});
+                            }
+                            else
+                            {
+                                vertices.push_back(Vertex{.pos = v1, .color = color});
+                                vertices.push_back(Vertex{.pos = v4, .color = color});
+                                vertices.push_back(Vertex{.pos = v3, .color = color});
+                                vertices.push_back(Vertex{.pos = v2, .color = color});
+                            }
+
+                            indices.insert(indices.end(), {
+                                               startIndex + 0, startIndex + 1, startIndex + 2,
+                                               startIndex + 2, startIndex + 3, startIndex + 0
+                                           });
+
+                            for (l = 0; l < h; ++l)
+                            {
+                                for (k = 0; k < w; ++k)
+                                {
+                                    mask[j + l][i + k] = {.block = BlockType::Air, .backFace = false};
+                                }
+                            }
+
+                            i += w;
+                        }
+                        else
+                        {
+                            ++i;
+                        }
+                    }
+                }
+            }
+        }
+
+        m_indexCount = static_cast<uint32_t>(indices.size());
+
+        if (m_indexCount > 0)
+        {
+            auto vertexSize    = static_cast<uint32_t>(sizeof(Vertex) * vertices.size());
+            m_vertexAllocation = m_megaVertexBuffer->allocate(vertexSize);
+            if (m_vertexAllocation.valid)
+            {
+                m_megaVertexBuffer->upload(m_vertexAllocation, vertices.data());
+            }
+
+            auto indexSize    = static_cast<uint32_t>(sizeof(indices[0]) * indices.size());
+            m_indexAllocation = m_megaIndexBuffer->allocate(indexSize);
+            if (m_indexAllocation.valid)
+            {
+                m_megaIndexBuffer->upload(m_indexAllocation, indices.data());
+            }
+        }
+    }
+
+    bool Chunk::setBlock(int x, int y, int z, Block block)
+    {
+        if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE)
+        {
+            if (m_blocks[x][y][z].type != block.type || m_blocks[x][y][z].metadata != block.metadata)
+            {
+                m_blocks[x][y][z] = block;
+                m_isDirty         = true;
+                m_isSaveDirty     = true;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    Block Chunk::getBlock(const int x, const int y, const int z) const
+    {
+        if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE)
+        {
+            return m_blocks[x][y][z];
+        }
+
+        const float globalX = m_position.x + static_cast<float>(x);
+        const int globalY   = static_cast<int>(std::round(m_position.y)) + y;
+        const float globalZ = m_position.z + static_cast<float>(z);
+
+        if (globalY < 0) return BlockType::Stone;
+
+        const float noiseValue  = m_noise.GetNoise(globalX, globalZ);
+        const int terrainHeight = static_cast<int>((noiseValue + 1.0f) * 0.5f * 60.0f) + 15;
+
+        if (globalY >= terrainHeight) return BlockType::Air;
+        if (globalY == terrainHeight - 1) return BlockType::Grass;
+        if (globalY >= terrainHeight - 4) return BlockType::Dirt;
+        return BlockType::Stone;
+    }
+
+    bool Chunk::save(const std::string& filepath)
+    {
+        if (!m_isSaveDirty) return true;
+        m_isSaveDirty = false;
+
+        std::ofstream out(filepath, std::ios::binary);
+        if (!out) return false;
+
+        BlockType currentType = m_blocks[0][0][0];
+        uint32_t count        = 0;
+
+        for (const auto& slice: m_blocks)
+        {
+            for (const auto& row: slice)
+            {
+                for (const auto& block: row)
+                {
+                    if (block == currentType)
+                    {
+                        count++;
                     }
                     else
                     {
-                        ++i;
+                        out.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
+                        out.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
+                        currentType = block;
+                        count       = 1;
                     }
                 }
             }
         }
+        out.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
+        out.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
+
+        m_isDirty = false;
+        return true;
     }
 
-    m_indexCount = static_cast<uint32_t>(indices.size());
-
-    if (m_indexCount > 0)
+    bool Chunk::load(const std::string& filepath)
     {
-        auto vertexSize    = static_cast<uint32_t>(sizeof(Vertex) * vertices.size());
-        m_vertexAllocation = m_megaVertexBuffer->allocate(vertexSize);
-        if (m_vertexAllocation.valid)
+        std::ifstream in(filepath, std::ios::binary);
+        if (!in) return false;
+
+        int x = 0, y = 0, z = 0;
+        while (in && x < CHUNK_SIZE)
         {
-            m_megaVertexBuffer->upload(m_vertexAllocation, vertices.data());
-        }
+            BlockType type;
+            uint32_t count;
+            in.read(reinterpret_cast<char*>(&type), sizeof(BlockType));
+            if (in.eof()) break;
+            in.read(reinterpret_cast<char*>(&count), sizeof(uint32_t));
 
-        auto indexSize    = static_cast<uint32_t>(sizeof(indices[0]) * indices.size());
-        m_indexAllocation = m_megaIndexBuffer->allocate(indexSize);
-        if (m_indexAllocation.valid)
-        {
-            m_megaIndexBuffer->upload(m_indexAllocation, indices.data());
-        }
-    }
-}
-
-bool Chunk::setBlock(int x, int y, int z, Block block)
-{
-    if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE)
-    {
-        if (m_blocks[x][y][z].type != block.type || m_blocks[x][y][z].metadata != block.metadata)
-        {
-            m_blocks[x][y][z] = block;
-            m_isDirty         = true;
-            m_isSaveDirty     = true;
-            return true;
-        }
-    }
-    return false;
-}
-
-Block Chunk::getBlock(const int x, const int y, const int z) const
-{
-    if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE)
-    {
-        return m_blocks[x][y][z];
-    }
-
-    const float globalX = m_position.x + static_cast<float>(x);
-    const int globalY   = static_cast<int>(std::round(m_position.y)) + y;
-    const float globalZ = m_position.z + static_cast<float>(z);
-
-    if (globalY < 0) return BlockType::Stone;
-
-    const float noiseValue  = m_noise.GetNoise(globalX, globalZ);
-    const int terrainHeight = static_cast<int>((noiseValue + 1.0f) * 0.5f * 60.0f) + 15;
-
-    if (globalY >= terrainHeight) return BlockType::Air;
-    if (globalY == terrainHeight - 1) return BlockType::Grass;
-    if (globalY >= terrainHeight - 4) return BlockType::Dirt;
-    return BlockType::Stone;
-}
-
-bool Chunk::save(const std::string& filepath)
-{
-    if (!m_isSaveDirty) return true;
-    m_isSaveDirty = false;
-
-    std::ofstream out(filepath, std::ios::binary);
-    if (!out) return false;
-
-    BlockType currentType = m_blocks[0][0][0];
-    uint32_t count        = 0;
-
-    for (const auto& slice: m_blocks)
-    {
-        for (const auto& row: slice)
-        {
-            for (const auto& block: row)
+            for (uint32_t i = 0; i < count; ++i)
             {
-                if (block == currentType)
+                m_blocks[x][y][z] = type;
+                z++;
+                if (z >= CHUNK_SIZE)
                 {
-                    count++;
-                }
-                else
-                {
-                    out.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
-                    out.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
-                    currentType = block;
-                    count       = 1;
+                    z = 0;
+                    y++;
+                    if (y >= CHUNK_SIZE)
+                    {
+                        y = 0;
+                        x++;
+                        if (x >= CHUNK_SIZE) break;
+                    }
                 }
             }
         }
+        m_isDirty = false;
+        return true;
     }
-    out.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
-    out.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
 
-    m_isDirty = false;
-    return true;
-}
-
-bool Chunk::load(const std::string& filepath)
-{
-    std::ifstream in(filepath, std::ios::binary);
-    if (!in) return false;
-
-    int x = 0, y = 0, z = 0;
-    while (in && x < CHUNK_SIZE)
+    bool Chunk::isFaceVisible(int x, int y, int z) const
     {
-        BlockType type;
-        uint32_t count;
-        in.read(reinterpret_cast<char*>(&type), sizeof(BlockType));
-        if (in.eof()) break;
-        in.read(reinterpret_cast<char*>(&count), sizeof(uint32_t));
+        const BlockType type = getBlock(x, y, z);
+        return type == BlockType::Air;
+    }
 
-        for (uint32_t i = 0; i < count; ++i)
+    void Chunk::addFace(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, int x, int y, int z, int faceIndex,
+                        Block block) const
+    {
+        auto startIndex = static_cast<uint32_t>(vertices.size());
+
+        glm::vec3 color;
+        switch (block.type)
         {
-            m_blocks[x][y][z] = type;
-            z++;
-            if (z >= CHUNK_SIZE)
-            {
-                z = 0;
-                y++;
-                if (y >= CHUNK_SIZE)
-                {
-                    y = 0;
-                    x++;
-                    if (x >= CHUNK_SIZE) break;
-                }
-            }
+            case BlockType::Grass: color = {0.2f, 0.8f, 0.2f};
+                break;
+            case BlockType::Dirt: color = {0.5f, 0.3f, 0.1f};
+                break;
+            case BlockType::Stone: color = {0.5f, 0.5f, 0.5f};
+                break;
+            case BlockType::Water: color = {0.2f, 0.4f, 0.9f};
+                break;
+            case BlockType::Air: color = {1.0f, 1.0f, 1.0f};
+                break;
         }
+
+        if (faceIndex == 0 || faceIndex == 1) color *= 0.8f;
+        else if (faceIndex == 2 || faceIndex == 3) color *= 0.6f;
+        else if (faceIndex == 5) color *= 0.4f;
+
+        for (int i = 0; i < 4; ++i)
+        {
+            Vertex v{};
+            v.pos   = FACE_VERTICES[faceIndex][i] + glm::vec3(x, y, z) + m_position;
+            v.color = color;
+            vertices.push_back(v);
+        }
+
+        indices.insert(indices.end(), {
+                           startIndex + 0, startIndex + 1, startIndex + 2,
+                           startIndex + 2, startIndex + 3, startIndex + 0
+                       });
     }
-    m_isDirty = false;
-    return true;
-}
-
-bool Chunk::isFaceVisible(int x, int y, int z) const
-{
-    const BlockType type = getBlock(x, y, z);
-    return type == BlockType::Air;
-}
-
-void Chunk::addFace(std::vector<Vertex>& vertices, std::vector<uint32_t>& indices, int x, int y, int z, int faceIndex,
-                    Block block) const
-{
-    auto startIndex = static_cast<uint32_t>(vertices.size());
-
-    glm::vec3 color;
-    switch (block.type)
-    {
-        case BlockType::Grass: color = {0.2f, 0.8f, 0.2f};
-            break;
-        case BlockType::Dirt: color = {0.5f, 0.3f, 0.1f};
-            break;
-        case BlockType::Stone: color = {0.5f, 0.5f, 0.5f};
-            break;
-        case BlockType::Water: color = {0.2f, 0.4f, 0.9f};
-            break;
-        case BlockType::Air: color = {1.0f, 1.0f, 1.0f};
-            break;
-    }
-
-    if (faceIndex == 0 || faceIndex == 1) color *= 0.8f;
-    else if (faceIndex == 2 || faceIndex == 3) color *= 0.6f;
-    else if (faceIndex == 5) color *= 0.4f;
-
-    for (int i = 0; i < 4; ++i)
-    {
-        Vertex v{};
-        v.pos   = FACE_VERTICES[faceIndex][i] + glm::vec3(x, y, z) + m_position;
-        v.color = color;
-        vertices.push_back(v);
-    }
-
-    indices.insert(indices.end(), {
-                       startIndex + 0, startIndex + 1, startIndex + 2,
-                       startIndex + 2, startIndex + 3, startIndex + 0
-                   });
-}
+} // namespace voxl

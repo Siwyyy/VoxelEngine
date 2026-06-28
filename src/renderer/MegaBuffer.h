@@ -5,38 +5,41 @@
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 
-struct BlockAllocation
+namespace voxl
 {
-    uint32_t offset = 0;
-    uint32_t size   = 0;
-    bool valid      = false;
-};
-
-class MegaBuffer
-{
-public:
-    MegaBuffer(VkDevice device, VmaAllocator allocator, VkDeviceSize capacity, VkBufferUsageFlags usage);
-    ~MegaBuffer();
-
-    BlockAllocation allocate(uint32_t size);
-    void free(const BlockAllocation& block);
-
-    void upload(const BlockAllocation& block, const void* data) const;
-
-    [[nodiscard]] VkBuffer getBuffer() const { return m_buffer; }
-
-private:
-    VmaAllocator m_allocator;
-    VkBuffer m_buffer          = VK_NULL_HANDLE;
-    VmaAllocation m_allocation = VK_NULL_HANDLE;
-    void* m_mappedData         = nullptr;
-
-    struct FreeBlock
+    struct BlockAllocation
     {
-        uint32_t offset;
-        uint32_t size;
+        uint32_t offset = 0;
+        uint32_t size   = 0;
+        bool valid      = false;
     };
 
-    std::list<FreeBlock> m_freeBlocks;
-    std::mutex m_mutex;
-};
+    class MegaBuffer
+    {
+    public:
+        MegaBuffer(VkDevice device, VmaAllocator allocator, VkDeviceSize capacity, VkBufferUsageFlags usage);
+        ~MegaBuffer();
+
+        BlockAllocation allocate(uint32_t size);
+        void free(const BlockAllocation& block);
+
+        void upload(const BlockAllocation& block, const void* data) const;
+
+        [[nodiscard]] VkBuffer getBuffer() const { return m_buffer; }
+
+    private:
+        VmaAllocator m_allocator;
+        VkBuffer m_buffer          = VK_NULL_HANDLE;
+        VmaAllocation m_allocation = VK_NULL_HANDLE;
+        void* m_mappedData         = nullptr;
+
+        struct FreeBlock
+        {
+            uint32_t offset;
+            uint32_t size;
+        };
+
+        std::list<FreeBlock> m_freeBlocks;
+        std::mutex m_mutex;
+    };
+} // namespace voxl

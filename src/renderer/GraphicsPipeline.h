@@ -1,25 +1,28 @@
 #pragma once
 #include <vulkan/vulkan.h>
 
-class Shader;
-
-class GraphicsPipeline
+namespace voxl
 {
-public:
-    GraphicsPipeline(VkDevice device, VkFormat swapchainImageFormat, VkFormat depthFormat, const Shader& vertShader,
-                     const Shader& fragShader);
-    ~GraphicsPipeline();
+    class Shader;
 
-    GraphicsPipeline(const GraphicsPipeline&)            = delete;
-    GraphicsPipeline& operator=(const GraphicsPipeline&) = delete;
+    class GraphicsPipeline
+    {
+    public:
+        GraphicsPipeline(VkDevice device, VkFormat swapchainImageFormat, VkFormat depthFormat, const Shader& vertShader,
+                         const Shader& fragShader);
+        ~GraphicsPipeline();
 
-    [[nodiscard]] VkPipeline getPipeline() const { return m_pipeline; }
-    [[nodiscard]] VkPipelineLayout getLayout() const { return m_layout; }
+        GraphicsPipeline(const GraphicsPipeline&)            = delete;
+        GraphicsPipeline& operator=(const GraphicsPipeline&) = delete;
 
-    void bind(VkCommandBuffer commandBuffer) const;
+        [[nodiscard]] VkPipeline getPipeline() const { return m_pipeline; }
+        [[nodiscard]] VkPipelineLayout getLayout() const { return m_layout; }
 
-private:
-    VkDevice m_device;
-    VkPipeline m_pipeline     = VK_NULL_HANDLE;
-    VkPipelineLayout m_layout = VK_NULL_HANDLE;
-};
+        void bind(VkCommandBuffer commandBuffer) const;
+
+    private:
+        VkDevice m_device;
+        VkPipeline m_pipeline     = VK_NULL_HANDLE;
+        VkPipelineLayout m_layout = VK_NULL_HANDLE;
+    };
+} // namespace voxl

@@ -3,9 +3,12 @@
 
 #include "Vertex.h"
 
-class VoxelMesh
+namespace voxl
 {
-public:
-    static const std::vector<Vertex> vertices;
-    static const std::vector<uint16_t> indices;
-};
+    class VoxelMesh
+    {
+    public:
+        static const std::vector<Vertex> vertices;
+        static const std::vector<uint16_t> indices;
+    };
+} // namespace voxl
