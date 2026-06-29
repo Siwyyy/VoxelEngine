@@ -6,7 +6,7 @@ Oto lista potencjalnych funkcjonalności, ulepszeń i optymalizacji, które moż
 
 ## 🎮 1. Fizyka i Poruszanie się
 Urealnienie zachowania gracza w świecie voxelowym.
-- [ ] **Grawitacja i spadanie**: Dodanie stałego przyspieszenia w dół działającego na kamerę gracza, gdy nie jest w trybie niszczenia/budowania.
+- [ ] **Grawitacja i spadanie**: Dodanie stałego przyspieszenia w dół działającego na gracza, gdy nie jest w trybie niszczenia/budowania.
 - [ ] **Kolizje z voxelami**: Wykrywanie kolizji typu AABB (pudełko kolizyjne gracza z blokami) uniemożliwiające przechodzenie przez ściany i ziemię.
 - [ ] **Chodzenie i skakanie**: Dodanie obsługi spacji do skoku, gdy gracz dotyka ziemi, oraz ograniczenie lotu kamery (klawisz przełączający tryb latania Spectator vs tryb chodzenia).
 - [ ] **Ślizganie i tarcie**: Różne zachowanie w zależności od podłoża (np. lód).
@@ -46,7 +46,7 @@ Stopniowe wprowadzanie nowoczesnych standardów języka w celu poprawy bezpiecze
 ### 📦 Core, Input i Utils
 - [ ] **`std::expected` zamiast wyjątków w `FileSystem::readFile`**: Bezpieczniejsza, funkcyjna obsługa błędów odczytu plików bez narzutu wyjątków.
 - [ ] **Algorytmy `std::ranges` w statystykach i culling'u**: Użycie `std::ranges::fold_left` w `VoxelEngine.cpp` do liczenia średniego czasu klatki oraz `std::ranges::all_of` w `Frustum.cpp` zamiast klasycznych pętli.
-- [ ] **Mocno typowane klawisze (`std::to_underlying`)**: Zastąpienie makr `LAVA_KEY_...` w `KeyCodes.h` oraz `LAVA_MOUSE_...` w `MouseButtonCodes.h` przez `enum class KeyCode : int32_t` i `enum class MouseButton : int32_t`, z rzutowaniem przez `std::to_underlying`.
+- [x] **Mocno typowane klawisze (`std::to_underlying`)**: Zastąpienie makr `LAVA_KEY_...` w `KeyCodes.h` oraz `LAVA_MOUSE_...` w `MouseButtonCodes.h` przez `enum class KeyCode : int32_t` i `enum class MouseButton : int32_t`, z rzutowaniem przez `std::to_underlying`.
 - [ ] **Wątki z `std::move_only_function`**: Zastąpienie `std::function` w kolejce `ThreadPool::m_tasks` na rzecz `std::move_only_function`, co eliminuje potrzebę alokacji przez `std::make_shared` w `enqueue()`.
 
 ### 🌍 World (Świat)

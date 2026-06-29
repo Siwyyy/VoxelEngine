@@ -2,12 +2,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "input/ActionManager.h"
+
 namespace voxl
 {
     class Camera
     {
     public:
-        Camera(glm::vec3 startPosition, glm::vec3 startUp, float startYaw, float startPitch);
+        Camera(glm::vec3 startPosition, glm::vec3 startUp, float startYaw, float startPitch, const ActionManager& actionManager);
 
         void update(float deltaTime);
 
@@ -30,10 +32,12 @@ namespace voxl
     private:
         void updateCameraVectors();
 
+        const ActionManager& m_actionManager;
+
         glm::vec3 m_position;
-        glm::vec3 m_front;
-        glm::vec3 m_up;
-        glm::vec3 m_right;
+        glm::vec3 m_front{};
+        glm::vec3 m_up{};
+        glm::vec3 m_right{};
         glm::vec3 m_worldUp;
 
         float m_yaw;

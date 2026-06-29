@@ -3,46 +3,45 @@
 #include <algorithm>
 
 #include "input/Input.h"
-#include "input/InputCodes.h"
 
 namespace voxl
 {
-    Camera::Camera(glm::vec3 startPosition, glm::vec3 startUp, float startYaw, float startPitch)
-        : m_position(startPosition), m_worldUp(startUp), m_yaw(startYaw), m_pitch(startPitch) { updateCameraVectors(); }
+    Camera::Camera(glm::vec3 startPosition, glm::vec3 startUp, float startYaw, float startPitch, const ActionManager& actionManager)
+        : m_actionManager(actionManager), m_position(startPosition), m_worldUp(startUp), m_yaw(startYaw), m_pitch(startPitch) { updateCameraVectors(); }
 
     void Camera::update(const float deltaTime)
     {
         // Ruch klawiaturą
         const float velocity = m_movementSpeed * deltaTime;
-        if (Input::isKeyPressed(KeyCode::W)) m_position += m_front * velocity;
-        if (Input::isKeyPressed(KeyCode::S)) m_position -= m_front * velocity;
-        if (Input::isKeyPressed(KeyCode::A)) m_position -= m_right * velocity;
-        if (Input::isKeyPressed(KeyCode::D)) m_position += m_right * velocity;
-        if (Input::isKeyPressed(KeyCode::Space)) m_position += m_worldUp * velocity;
-        if (Input::isKeyPressed(KeyCode::LeftShift)) m_position -= m_worldUp * velocity;
+        if (m_actionManager.isActionPressed(InputAction::MoveForward)) m_position += m_front * velocity;
+        if (m_actionManager.isActionPressed(InputAction::MoveBackward)) m_position -= m_front * velocity;
+        if (m_actionManager.isActionPressed(InputAction::MoveLeft)) m_position -= m_right * velocity;
+        if (m_actionManager.isActionPressed(InputAction::MoveRight)) m_position += m_right * velocity;
+        if (m_actionManager.isActionPressed(InputAction::MoveUp)) m_position += m_worldUp * velocity;
+        if (m_actionManager.isActionPressed(InputAction::MoveDown)) m_position -= m_worldUp * velocity;
 
         // Obrót myszką
         const glm::vec2 mousePos = Input::getMousePosition();
-        const float xpos         = mousePos.x;
-        const float ypos         = mousePos.y;
+        const float xPos         = mousePos.x;
+        const float yPos         = mousePos.y;
 
         if (m_firstMouse)
         {
-            m_lastX      = xpos;
-            m_lastY      = ypos;
+            m_lastX      = xPos;
+            m_lastY      = yPos;
             m_firstMouse = false;
         }
 
-        float xoffset = xpos - m_lastX;
-        float yoffset = m_lastY - ypos; // Odwrócone, ponieważ koordynaty Y idą od góry do dołu okna
-        m_lastX       = xpos;
-        m_lastY       = ypos;
+        float xOffset = xPos - m_lastX;
+        float yOffset = m_lastY - yPos; // Odwrócone, ponieważ koordynaty Y idą od góry do dołu okna
+        m_lastX       = xPos;
+        m_lastY       = yPos;
 
-        xoffset *= m_mouseSensitivity;
-        yoffset *= m_mouseSensitivity;
+        xOffset *= m_mouseSensitivity;
+        yOffset *= m_mouseSensitivity;
 
-        m_yaw   += xoffset;
-        m_pitch += yoffset;
+        m_yaw   += xOffset;
+        m_pitch += yOffset;
 
         m_pitch = std::clamp(m_pitch, -89.0f, 89.0f);
 

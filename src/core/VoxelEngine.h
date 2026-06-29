@@ -7,6 +7,7 @@
 
 #include "Camera.h"
 #include "Window.h"
+#include "input/ActionManager.h"
 #include "renderer/VulkanContext.h"
 #include "world/World.h"
 
@@ -27,6 +28,7 @@ namespace voxl
 
         std::unique_ptr<Window> m_window;
         std::unique_ptr<class Input> m_input;
+        ActionManager m_actionManager;
         std::unique_ptr<Camera> m_camera;
         std::unique_ptr<World> m_world;
         VulkanContext m_vulkanContext;

@@ -17,9 +17,20 @@ namespace voxl
     {
         m_window = std::make_unique<Window>(m_width, m_height, "Voxel Engine");
         m_input  = std::make_unique<GLFWInput>(m_window->getGLFWwindow());
-        m_camera = std::make_unique<Camera>(glm::vec3(1.6f, 1.5f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -15.0f);
+        m_camera = std::make_unique<Camera>(glm::vec3(1.6f, 1.5f, 5.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, -15.0f, m_actionManager);
 
         glfwSetInputMode(m_window->getGLFWwindow(), GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+
+        m_actionManager.bindAction(InputAction::MoveForward, KeyCode::W);
+        m_actionManager.bindAction(InputAction::MoveBackward, KeyCode::S);
+        m_actionManager.bindAction(InputAction::MoveLeft, KeyCode::A);
+        m_actionManager.bindAction(InputAction::MoveRight, KeyCode::D);
+        m_actionManager.bindAction(InputAction::MoveUp, KeyCode::Space);
+        m_actionManager.bindAction(InputAction::MoveDown, KeyCode::LeftShift);
+        m_actionManager.bindAction(InputAction::Exit, KeyCode::Escape);
+        m_actionManager.bindAction(InputAction::ToggleCursor, KeyCode::Tab);
+        m_actionManager.bindAction(InputAction::Interact, MouseCode::Left);
+        m_actionManager.bindAction(InputAction::SecondaryInteract, MouseCode::Right);
 
         m_frameTimes.resize(300, 0.0f);
         m_gpuFrameTimes.resize(300, 0.0f);
@@ -170,9 +181,9 @@ namespace voxl
                 continue;
             }
 
-            if (Input::isKeyPressed(KeyCode::Escape)) { glfwSetWindowShouldClose(m_window->getGLFWwindow(), GLFW_TRUE); }
+            if (m_actionManager.isActionPressed(InputAction::Exit)) { glfwSetWindowShouldClose(m_window->getGLFWwindow(), GLFW_TRUE); }
 
-            const bool tabPressed = Input::isKeyPressed(KeyCode::Tab);
+            const bool tabPressed = m_actionManager.isActionPressed(InputAction::ToggleCursor);
             if (tabPressed && !m_tabPressedLastFrame)
             {
                 m_cursorEnabled = !m_cursorEnabled;
@@ -311,8 +322,8 @@ namespace voxl
                 if (m_clickCooldown > 0.0f) { m_clickCooldown -= deltaTime; }
                 else
                 {
-                    const bool leftClick  = Input::isMouseButtonPressed(MouseCode::Left);
-                    const bool rightClick = Input::isMouseButtonPressed(MouseCode::Right);
+                    const bool leftClick  = m_actionManager.isActionPressed(InputAction::Interact);
+                    const bool rightClick = m_actionManager.isActionPressed(InputAction::SecondaryInteract);
 
                     if (leftClick || rightClick)
                     {
