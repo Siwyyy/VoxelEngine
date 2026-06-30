@@ -1,8 +1,8 @@
-﻿#pragma once
+#pragma once
 
 namespace voxl
 {
-    enum class MouseCode : uint32_t
+    enum class MouseCode : uint8_t
     {
         Button1 = 0,
         Button2 = 1,
@@ -18,7 +18,7 @@ namespace voxl
         Middle  = Button4
     };
 
-    enum class KeyCode : uint32_t
+    enum class KeyCode : uint16_t
     {
         // From glfw3.h
         Space        = 32,

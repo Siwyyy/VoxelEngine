@@ -4,7 +4,7 @@
 
 namespace voxl
 {
-    enum class InputAction : uint32_t
+    enum class InputAction : uint8_t
     {
         MoveForward,
         MoveBackward,

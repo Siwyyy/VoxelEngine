@@ -9,9 +9,14 @@ namespace voxl
     Shader::Shader(VkDevice device, const std::string& filePath)
         : m_device(device)
     {
-        const auto code = FileSystem::readFile(filePath);
+        const auto codeResult = FileSystem::readFile(filePath);
+        if (!codeResult.has_value())
+        {
+            throw std::runtime_error(codeResult.error());
+        }
+        const auto& code = codeResult.value();
 
-        VkShaderModuleCreateInfo createInfo{
+        const VkShaderModuleCreateInfo createInfo{
             .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
             .codeSize = code.size(),
             .pCode = reinterpret_cast<const uint32_t*>(code.data())

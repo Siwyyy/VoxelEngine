@@ -44,10 +44,10 @@ Usprawnienia pod maską.
 Stopniowe wprowadzanie nowoczesnych standardów języka w celu poprawy bezpieczeństwa, czytelności i wydajności.
 
 ### 📦 Core, Input i Utils
-- [ ] **`std::expected` zamiast wyjątków w `FileSystem::readFile`**: Bezpieczniejsza, funkcyjna obsługa błędów odczytu plików bez narzutu wyjątków.
-- [ ] **Algorytmy `std::ranges` w statystykach i culling'u**: Użycie `std::ranges::fold_left` w `VoxelEngine.cpp` do liczenia średniego czasu klatki oraz `std::ranges::all_of` w `Frustum.cpp` zamiast klasycznych pętli.
+- [x] **`std::expected` zamiast wyjątków w `FileSystem::readFile`**: Bezpieczniejsza, funkcyjna obsługa błędów odczytu plików bez narzutu wyjątków.
+- [x] **Algorytmy `std::ranges` w statystykach i culling'u**: Użycie `std::ranges::fold_left` w `VoxelEngine.cpp` do liczenia średniego czasu klatki oraz `std::ranges::all_of` w `Frustum.cpp` zamiast klasycznych pętli.
 - [x] **Mocno typowane klawisze (`std::to_underlying`)**: Zastąpienie makr `LAVA_KEY_...` w `KeyCodes.h` oraz `LAVA_MOUSE_...` w `MouseButtonCodes.h` przez `enum class KeyCode : int32_t` i `enum class MouseButton : int32_t`, z rzutowaniem przez `std::to_underlying`.
-- [ ] **Wątki z `std::move_only_function`**: Zastąpienie `std::function` w kolejce `ThreadPool::m_tasks` na rzecz `std::move_only_function`, co eliminuje potrzebę alokacji przez `std::make_shared` w `enqueue()`.
+- [x] **Wątki z `std::move_only_function`**: Zastąpienie `std::function` w kolejce `ThreadPool::m_tasks` na rzecz `std::move_only_function`, co eliminuje potrzebę alokacji przez `std::make_shared` w `enqueue()`.
 
 ### 🌍 World (Świat)
 - [ ] **Płaskie tablice z widokiem `std::mdspan`**: Zastąpienie zagnieżdżonych tablic C-style w klasie `Chunk` (`Block m_blocks[32][32][32]`) spłaszczonym `std::array<Block, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE>` z widokiem `std::mdspan` i wielowymiarowym operatorem `[]` z C++23.

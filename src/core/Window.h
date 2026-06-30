@@ -27,6 +27,6 @@ namespace voxl
         uint32_t m_width;
         uint32_t m_height;
         std::string m_title;
-        GLFWwindow* m_window;
+        GLFWwindow* m_window{nullptr};
     };
 } // namespace voxl

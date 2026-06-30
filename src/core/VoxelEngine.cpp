@@ -10,6 +10,8 @@
 #include "Time.h"
 #include "input/GLFWInput.h"
 
+#include <algorithm>
+#include <ranges>
 
 namespace voxl
 {
@@ -282,12 +284,10 @@ namespace voxl
             ImGui::SetNextWindowSize(ImVec2(350, 240), ImGuiCond_FirstUseEver);
             ImGui::Begin("Performance Profiler");
 
-            float avgCpu = 0.0f;
-            float avgGpu = 0.0f;
-            for (const float ft: m_frameTimes) avgCpu += ft;
-            for (const float ft: m_gpuFrameTimes) avgGpu += ft;
-            avgCpu /= static_cast<float>(m_frameTimes.size());
-            avgGpu /= static_cast<float>(m_gpuFrameTimes.size());
+            float avgCpu = std::ranges::fold_left(m_frameTimes, 0.0f, std::plus{});
+            float avgGpu = std::ranges::fold_left(m_gpuFrameTimes, 0.0f, std::plus{});
+            avgCpu       /= static_cast<float>(m_frameTimes.size());
+            avgGpu       /= static_cast<float>(m_gpuFrameTimes.size());
 
             ImGui::Text("CPU Frame Time: %.2f ms", avgCpu);
             ImGui::PlotLines("##CPUGraph", m_frameTimes.data(), static_cast<int>(m_frameTimes.size()),

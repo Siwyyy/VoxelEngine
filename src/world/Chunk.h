@@ -77,7 +77,7 @@ namespace voxl
         uint32_t m_indexCount = 0;
 
         FastNoiseLite m_noise;
-        Block m_blocks[CHUNK_SIZE][CHUNK_SIZE][CHUNK_SIZE]{};
+        std::array<std::array<std::array<Block, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_SIZE> m_blocks{};
 
         bool m_isDirty     = false;
         bool m_isSaveDirty = false;

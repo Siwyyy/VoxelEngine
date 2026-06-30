@@ -1,5 +1,7 @@
 #include "Frustum.h"
 
+#include <algorithm>
+
 namespace voxl
 {
     Frustum::Frustum(const glm::mat4& vpMatrix) { extractPlanes(vpMatrix); }
@@ -17,15 +19,14 @@ namespace voxl
 
     bool Frustum::intersectsAABB(const glm::vec3& minAABB, const glm::vec3& maxAABB) const
     {
-        for (const auto& plane: m_planes)
+        return std::ranges::all_of(m_planes, [&](const auto& plane)
         {
             glm::vec3 pVertex = minAABB;
             if (plane.normal.x >= 0) pVertex.x = maxAABB.x;
             if (plane.normal.y >= 0) pVertex.y = maxAABB.y;
             if (plane.normal.z >= 0) pVertex.z = maxAABB.z;
 
-            if (glm::dot(plane.normal, pVertex) + plane.distance < 0.0f) { return false; }
-        }
-        return true;
+            return glm::dot(plane.normal, pVertex) + plane.distance >= 0.0f;
+        });
     }
 } // namespace voxl

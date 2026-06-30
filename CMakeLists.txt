@@ -10,7 +10,11 @@ option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
 set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
 
 if (ENABLE_CLANG_TIDY)
-    find_program(CLANG_TIDY_EXE NAMES clang-tidy)
+    find_program(CLANG_TIDY_EXE NAMES clang-tidy
+        HINTS
+            "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin"
+            "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin"
+    )
     if (CLANG_TIDY_EXE)
         set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_EXE};
         -checks=bugprone-*,

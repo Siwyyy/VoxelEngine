@@ -8,14 +8,14 @@ namespace voxl
     Buffer::Buffer(VmaAllocator allocator, VkDeviceSize size, VkBufferUsageFlags usage, VmaMemoryUsage memoryUsage)
         : m_allocator(allocator)
     {
-        VkBufferCreateInfo bufferInfo{
+        const VkBufferCreateInfo bufferInfo{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .size = size,
             .usage = usage,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE
         };
 
-        VmaAllocationCreateInfo allocInfo{
+        const VmaAllocationCreateInfo allocInfo{
             .usage = memoryUsage
         };
 
@@ -37,7 +37,7 @@ namespace voxl
     {
         void* mappedData;
         vmaMapMemory(m_allocator, m_allocation, &mappedData);
-        memcpy(mappedData, data, (size_t)size);
+        memcpy(mappedData, data, static_cast<size_t>(size));
         vmaUnmapMemory(m_allocator, m_allocation);
     }
 } // namespace voxl

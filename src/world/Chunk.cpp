@@ -7,7 +7,7 @@
 
 namespace voxl
 {
-    static const std::array<std::array<glm::vec3, 4>, 6> FACE_VERTICES = {
+    static constexpr std::array<std::array<glm::vec3, 4>, 6> FACE_VERTICES = {
         {
             // Front
             {{{-0.5f, -0.5f, 0.5f}, {0.5f, -0.5f, 0.5f}, {0.5f, 0.5f, 0.5f}, {-0.5f, 0.5f, 0.5f}}},

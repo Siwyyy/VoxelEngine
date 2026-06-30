@@ -70,7 +70,7 @@ namespace voxl
         m_frameCount++;
 
         {
-            std::lock_guard lock(m_deletionMutex);
+            std::scoped_lock lock(m_deletionMutex);
             for (auto it = m_chunksToDelete.begin(); it != m_chunksToDelete.end();)
             {
                 if (m_frameCount - it->frameRemoved > 3)
@@ -161,7 +161,7 @@ namespace voxl
                     {
                         chunk->save(filepath);
 
-                        std::lock_guard lock(m_deletionMutex);
+                        std::scoped_lock lock(m_deletionMutex);
                         m_chunksToDelete.push_back({.chunk = std::move(chunk), .frameRemoved = currentFrame});
                     });
                 }
@@ -349,32 +349,32 @@ namespace voxl
 
                 if (lx == 0)
                 {
-                    const auto nIt = m_chunkMap.find({chunkX - 1, chunkY, chunkZ});
+                    const auto nIt = m_chunkMap.find({.x = chunkX - 1, .y = chunkY, .z = chunkZ});
                     if (nIt != m_chunkMap.end()) nIt->second->setDirty(true);
                 }
                 else if (lx == Chunk::CHUNK_SIZE - 1)
                 {
-                    const auto nIt = m_chunkMap.find({chunkX + 1, chunkY, chunkZ});
+                    const auto nIt = m_chunkMap.find({.x = chunkX + 1, .y = chunkY, .z = chunkZ});
                     if (nIt != m_chunkMap.end()) nIt->second->setDirty(true);
                 }
                 if (ly == 0)
                 {
-                    const auto nIt = m_chunkMap.find({chunkX, chunkY - 1, chunkZ});
+                    const auto nIt = m_chunkMap.find({.x = chunkX, .y = chunkY - 1, .z = chunkZ});
                     if (nIt != m_chunkMap.end()) nIt->second->setDirty(true);
                 }
                 else if (ly == Chunk::CHUNK_SIZE - 1)
                 {
-                    const auto nIt = m_chunkMap.find({chunkX, chunkY + 1, chunkZ});
+                    const auto nIt = m_chunkMap.find({.x = chunkX, .y = chunkY + 1, .z = chunkZ});
                     if (nIt != m_chunkMap.end()) nIt->second->setDirty(true);
                 }
                 if (lz == 0)
                 {
-                    const auto nIt = m_chunkMap.find({chunkX, chunkY, chunkZ - 1});
+                    const auto nIt = m_chunkMap.find({.x = chunkX, .y = chunkY, .z = chunkZ - 1});
                     if (nIt != m_chunkMap.end()) nIt->second->setDirty(true);
                 }
                 else if (lz == Chunk::CHUNK_SIZE - 1)
                 {
-                    const auto nIt = m_chunkMap.find({chunkX, chunkY, chunkZ + 1});
+                    const auto nIt = m_chunkMap.find({.x = chunkX, .y = chunkY, .z = chunkZ + 1});
                     if (nIt != m_chunkMap.end()) nIt->second->setDirty(true);
                 }
             }

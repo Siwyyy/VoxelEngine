@@ -1,6 +1,8 @@
 #include "FileSystem.h"
 
 #include <array>
+#include <expected>
+#include <format>
 #include <fstream>
 #include <stdexcept>
 
@@ -22,7 +24,7 @@ namespace voxl
 #endif
     }
 
-    std::vector<char> FileSystem::readFile(const std::string& relativePath)
+    std::expected<std::vector<char>, std::string> FileSystem::readFile(const std::string& relativePath)
     {
         const std::filesystem::path fullPath = getExecutableDir() / relativePath;
 
@@ -30,7 +32,7 @@ namespace voxl
 
         if (!file.is_open())
         {
-            throw std::runtime_error("Failed to open file: " + fullPath.string());
+            return std::unexpected(std::format("Failed to open file: {}", fullPath.string()));
         }
 
         const size_t fileSize = static_cast<size_t>(file.tellg());

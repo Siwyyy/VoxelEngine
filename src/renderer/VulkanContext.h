@@ -98,10 +98,10 @@ namespace voxl
         std::vector<VkFence> m_inFlightFences;
         uint32_t m_currentFrame = 0;
 
-        VkQueryPool m_queryPool = VK_NULL_HANDLE;
-        float m_timestampPeriod = 1.0f;
-        float m_gpuFrameTime    = 0.0f;
-        bool m_firstFrame[2]    = {true, true};
+        VkQueryPool m_queryPool          = VK_NULL_HANDLE;
+        float m_timestampPeriod          = 1.0f;
+        float m_gpuFrameTime             = 0.0f;
+        std::array<bool, 2> m_firstFrame = {true, true};
 
         std::unique_ptr<MegaBuffer> m_megaVertexBuffer;
         std::unique_ptr<MegaBuffer> m_megaIndexBuffer;

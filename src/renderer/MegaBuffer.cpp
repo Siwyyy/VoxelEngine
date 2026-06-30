@@ -8,14 +8,14 @@ namespace voxl
     MegaBuffer::MegaBuffer(VkDevice device, VmaAllocator allocator, VkDeviceSize capacity, VkBufferUsageFlags usage)
         : m_allocator(allocator)
     {
-        VkBufferCreateInfo bufferInfo{
+        const VkBufferCreateInfo bufferInfo{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .size = capacity,
             .usage = usage,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE
         };
 
-        VmaAllocationCreateInfo allocInfo{
+        const VmaAllocationCreateInfo allocInfo{
             .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
             .usage = VMA_MEMORY_USAGE_CPU_TO_GPU
         };
@@ -41,7 +41,7 @@ namespace voxl
     BlockAllocation MegaBuffer::allocate(uint32_t size)
     {
         if (size == 0) return {.offset = 0, .size = 0, .valid = false};
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         for (auto it = m_freeBlocks.begin(); it != m_freeBlocks.end(); ++it)
         {
             if (it->size >= size)
@@ -69,7 +69,7 @@ namespace voxl
     void MegaBuffer::free(const BlockAllocation& block)
     {
         if (!block.valid) return;
-        std::lock_guard lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
 
         m_freeBlocks.push_back({.offset = block.offset, .size = block.size});
         m_freeBlocks.sort([](const FreeBlock& a, const FreeBlock& b)

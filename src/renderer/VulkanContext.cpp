@@ -83,14 +83,14 @@ namespace voxl
         m_megaIndexBuffer = std::make_unique<MegaBuffer>(m_device, m_allocator, indexMegaSize,
                                                          VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
-        VkBufferCreateInfo indirectInfo{
+        const VkBufferCreateInfo indirectInfo{
             .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             .size = sizeof(VkDrawIndexedIndirectCommand) * m_maxIndirectCommands,
             .usage = VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE
         };
 
-        VmaAllocationCreateInfo indirectAllocInfo{
+        const VmaAllocationCreateInfo indirectAllocInfo{
             .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
             .usage = VMA_MEMORY_USAGE_CPU_TO_GPU
         };
@@ -194,7 +194,7 @@ namespace voxl
         constexpr std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
         const std::array<VkSemaphore, 1> signalSemaphores        = {m_renderFinishedSemaphores[imageIndex]};
 
-        VkSubmitInfo submitInfo{
+        const VkSubmitInfo submitInfo{
             .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
             .waitSemaphoreCount = 1,
             .pWaitSemaphores = waitSemaphores.data(),
@@ -211,7 +211,7 @@ namespace voxl
         }
 
         const std::array<VkSwapchainKHR, 1> swapchains = {m_swapchain};
-        VkPresentInfoKHR presentInfo{
+        const VkPresentInfoKHR presentInfo{
             .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .waitSemaphoreCount = 1,
             .pWaitSemaphores = signalSemaphores.data(),
@@ -443,7 +443,7 @@ namespace voxl
             indices.graphicsFamily.value_or(0), indices.presentFamily.value_or(0)
         };
 
-        VkSwapchainCreateInfoKHR createInfo{
+        const VkSwapchainCreateInfoKHR createInfo{
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
             .surface = m_surface,
             .minImageCount = imageCount,
@@ -516,7 +516,7 @@ namespace voxl
     {
         m_depthFormat = findDepthFormat();
 
-        VkImageCreateInfo imageInfo{
+        const VkImageCreateInfo imageInfo{
             .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
             .imageType = VK_IMAGE_TYPE_2D,
             .format = m_depthFormat,
@@ -534,7 +534,7 @@ namespace voxl
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
         };
 
-        VmaAllocationCreateInfo allocInfo{
+        const VmaAllocationCreateInfo allocInfo{
             .usage = VMA_MEMORY_USAGE_GPU_ONLY
         };
 
@@ -544,7 +544,7 @@ namespace voxl
             throw std::runtime_error("Failed to create depth image!");
         }
 
-        VkImageViewCreateInfo viewInfo{
+        const VkImageViewCreateInfo viewInfo{
             .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
             .image = m_depthImage,
             .viewType = VK_IMAGE_VIEW_TYPE_2D,
@@ -568,7 +568,7 @@ namespace voxl
     {
         const QueueFamilyIndices queueFamilyIndices = findQueueFamilies(m_physicalDevice);
 
-        VkCommandPoolCreateInfo poolInfo{
+        const VkCommandPoolCreateInfo poolInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
             .queueFamilyIndex = queueFamilyIndices.graphicsFamily.value_or(0)
@@ -584,7 +584,7 @@ namespace voxl
     {
         m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
-        VkCommandBufferAllocateInfo allocInfo{
+        const VkCommandBufferAllocateInfo allocInfo{
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             .commandPool = m_commandPool,
             .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
@@ -603,11 +603,11 @@ namespace voxl
         m_renderFinishedSemaphores.resize(m_swapchainImageViews.size());
         m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
-        VkSemaphoreCreateInfo semaphoreInfo{
+        const VkSemaphoreCreateInfo semaphoreInfo{
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
         };
 
-        VkFenceCreateInfo fenceInfo{
+        const VkFenceCreateInfo fenceInfo{
             .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .flags = VK_FENCE_CREATE_SIGNALED_BIT
         };
@@ -632,7 +632,7 @@ namespace voxl
 
     void VulkanContext::createQueryPool()
     {
-        VkQueryPoolCreateInfo queryPoolInfo{
+        const VkQueryPoolCreateInfo queryPoolInfo{
             .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
             .queryType = VK_QUERY_TYPE_TIMESTAMP,
             .queryCount = 2 * 2 // MAX_FRAMES_IN_FLIGHT * 2
@@ -1018,8 +1018,8 @@ namespace voxl
             glfwGetFramebufferSize(window, &width, &height);
 
             VkExtent2D actualExtent = {
-                static_cast<uint32_t>(width),
-                static_cast<uint32_t>(height)
+                .width  = static_cast<uint32_t>(width),
+                .height = static_cast<uint32_t>(height)
             };
 
             actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width,
