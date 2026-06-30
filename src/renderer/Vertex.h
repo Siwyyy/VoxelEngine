@@ -23,7 +23,7 @@ namespace voxl
 
         static std::array<VkVertexInputAttributeDescription, 2> getAttributeDescriptions()
         {
-            return std::array<VkVertexInputAttributeDescription, 2>{
+            return std::array{
                 VkVertexInputAttributeDescription{
                     .location = 0,
                     .binding = 0,

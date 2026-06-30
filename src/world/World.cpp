@@ -156,8 +156,8 @@ namespace voxl
                     auto chunk = std::move(it->second);
                     it         = m_chunkMap.erase(it);
 
-                    uint64_t currentFrame = m_frameCount;
-                    m_threadPool->enqueue([this, chunk = std::move(chunk), filepath, currentFrame]() mutable
+
+                    m_threadPool->enqueue([this, chunk = std::move(chunk), filepath, currentFrame = m_frameCount]() mutable
                     {
                         chunk->save(filepath);
 
@@ -315,10 +315,10 @@ namespace voxl
 
         vkDeviceWaitIdle(m_vulkanContext->getDevice());
 
-        for (const auto& pair: m_chunkMap)
+        for (const auto& [fst, snd]: m_chunkMap)
         {
-            std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, pair.first.x, pair.first.y, pair.first.z);
-            pair.second->save(filepath);
+            std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, fst.x, fst.y, fst.z);
+            snd->save(filepath);
         }
         m_chunkMap.clear();
         m_chunkFutures.clear();
@@ -340,9 +340,9 @@ namespace voxl
         const auto it          = m_chunkMap.find(coord);
         if (it != m_chunkMap.end())
         {
-            const int lx = x - chunkX * Chunk::CHUNK_SIZE;
-            const int ly = y - chunkY * Chunk::CHUNK_SIZE;
-            const int lz = z - chunkZ * Chunk::CHUNK_SIZE;
+            const int lx = x - chunkX * static_cast<int>(Chunk::CHUNK_SIZE);
+            const int ly = y - chunkY * static_cast<int>(Chunk::CHUNK_SIZE);
+            const int lz = z - chunkZ * static_cast<int>(Chunk::CHUNK_SIZE);
             if (it->second->setBlock(lx, ly, lz, block))
             {
                 it->second->setDirty(true);
@@ -391,9 +391,9 @@ namespace voxl
         const auto it          = m_chunkMap.find(coord);
         if (it != m_chunkMap.end())
         {
-            const int lx = x - chunkX * Chunk::CHUNK_SIZE;
-            const int ly = y - chunkY * Chunk::CHUNK_SIZE;
-            const int lz = z - chunkZ * Chunk::CHUNK_SIZE;
+            const int lx = x - chunkX * static_cast<int>(Chunk::CHUNK_SIZE);
+            const int ly = y - chunkY * static_cast<int>(Chunk::CHUNK_SIZE);
+            const int lz = z - chunkZ * static_cast<int>(Chunk::CHUNK_SIZE);
             return it->second->getBlock(lx, ly, lz);
         }
         return {BlockType::Air};
@@ -401,10 +401,10 @@ namespace voxl
 
     void World::saveAllChunks() const
     {
-        for (auto& pair: m_chunkMap)
+        for (const auto& [fst, snd]: m_chunkMap)
         {
-            std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, pair.first.x, pair.first.y, pair.first.z);
-            pair.second->save(filepath);
+            std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, fst.x, fst.y, fst.z);
+            snd->save(filepath);
         }
     }
 } // namespace voxl

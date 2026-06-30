@@ -37,6 +37,7 @@ namespace voxl
 
         ~ThreadPool()
         {
+            clearTasks();
             {
                 std::unique_lock lock(m_mutex);
                 m_stop = true;

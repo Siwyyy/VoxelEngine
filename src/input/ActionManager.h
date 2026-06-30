@@ -14,17 +14,17 @@ namespace voxl
     class ActionManager
     {
     public:
-        ActionManager() = default;
+        ActionManager()  = default;
         ~ActionManager() = default;
 
-        ActionManager(const ActionManager&) = delete;
-        ActionManager& operator=(const ActionManager&) = delete;
-        ActionManager(ActionManager&&) noexcept = default;
+        ActionManager(const ActionManager&)                = delete;
+        ActionManager& operator=(const ActionManager&)     = delete;
+        ActionManager(ActionManager&&) noexcept            = default;
         ActionManager& operator=(ActionManager&&) noexcept = default;
 
         void bindAction(InputAction action, InputBinding binding);
         void clearAction(InputAction action);
-        
+
         [[nodiscard]] bool isActionPressed(InputAction action) const;
 
     private:

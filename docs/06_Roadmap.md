@@ -50,8 +50,8 @@ Stopniowe wprowadzanie nowoczesnych standardów języka w celu poprawy bezpiecze
 - [x] **Wątki z `std::move_only_function`**: Zastąpienie `std::function` w kolejce `ThreadPool::m_tasks` na rzecz `std::move_only_function`, co eliminuje potrzebę alokacji przez `std::make_shared` w `enqueue()`.
 
 ### 🌍 World (Świat)
-- [ ] **Płaskie tablice z widokiem `std::mdspan`**: Zastąpienie zagnieżdżonych tablic C-style w klasie `Chunk` (`Block m_blocks[32][32][32]`) spłaszczonym `std::array<Block, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE>` z widokiem `std::mdspan` i wielowymiarowym operatorem `[]` z C++23.
-- [ ] **Eliminacja zagnieżdżonych pętli (`std::views::cartesian_product`)**: Skrócenie generowania chunków w `Chunk::generateTerrain()` przy użyciu potoków ranges.
+- [x] **Płaskie tablice z widokiem `std::mdspan`**: Zastąpienie zagnieżdżonych tablic C-style w klasie `Chunk` (`Block m_blocks[32][32][32]`) spłaszczonym `std::array<Block, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE>` z widokiem `std::mdspan` i wielowymiarowym operatorem `[]` z C++23.
+- [x] **Eliminacja zagnieżdżonych pętli (`std::views::cartesian_product`)**: Skrócenie generowania chunków w `Chunk::generateTerrain()` przy użyciu potoków ranges.
 - [x] **Formatowanie ścieżek i logów (`std::format` / `std::print`)**: Zastąpienie wolnego `std::stringstream` oraz klasycznego `std::cout`/`std::cerr` przez `std::format` i C++23-standardowe `std::print`/`std::println`.
 
 ### 🎨 Renderer & Vulkan

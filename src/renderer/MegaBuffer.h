@@ -17,7 +17,7 @@ namespace voxl
     class MegaBuffer
     {
     public:
-        MegaBuffer(VkDevice device, VmaAllocator allocator, VkDeviceSize capacity, VkBufferUsageFlags usage);
+        MegaBuffer(VmaAllocator allocator, VkDeviceSize capacity, VkBufferUsageFlags usage);
         ~MegaBuffer();
 
         BlockAllocation allocate(uint32_t size);

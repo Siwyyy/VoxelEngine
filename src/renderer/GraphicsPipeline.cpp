@@ -27,7 +27,7 @@ namespace voxl
             .pName = "main"
         };
 
-        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages = {vertShaderStageInfo, fragShaderStageInfo};
+        std::array shaderStages = {vertShaderStageInfo, fragShaderStageInfo};
 
         auto bindingDescription    = Vertex::getBindingDescription();
         auto attributeDescriptions = Vertex::getAttributeDescriptions();

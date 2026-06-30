@@ -37,7 +37,7 @@ namespace voxl
     {
         void* mappedData;
         vmaMapMemory(m_allocator, m_allocation, &mappedData);
-        memcpy(mappedData, data, static_cast<size_t>(size));
+        memcpy(mappedData, data, size);
         vmaUnmapMemory(m_allocator, m_allocation);
     }
 } // namespace voxl

@@ -14,13 +14,13 @@ namespace voxl
 
     bool GLFWInput::isKeyPressedImpl(KeyCode keyCode) const
     {
-        const auto state = glfwGetKey(m_window, static_cast<int>(std::to_underlying(keyCode)));
+        const auto state = glfwGetKey(m_window, std::to_underlying(keyCode));
         return state == GLFW_PRESS || state == GLFW_REPEAT;
     }
 
     bool GLFWInput::isMouseButtonPressedImpl(MouseCode mouseCode) const
     {
-        const auto state = glfwGetMouseButton(m_window, static_cast<int>(std::to_underlying(mouseCode)));
+        const auto state = glfwGetMouseButton(m_window, std::to_underlying(mouseCode));
         return state == GLFW_PRESS;
     }
 

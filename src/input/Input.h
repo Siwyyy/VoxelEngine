@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 
 #include <glm/vec2.hpp>
 
@@ -17,9 +16,9 @@ namespace voxl
         Input& operator=(Input&&)      = delete;
         virtual ~Input()               = default;
 
-        inline static bool isKeyPressed(KeyCode keyCode) { return s_instance->isKeyPressedImpl(keyCode); }
-        inline static bool isMouseButtonPressed(MouseCode mouseCode) { return s_instance->isMouseButtonPressedImpl(mouseCode); }
-        inline static glm::vec2 getMousePosition() { return s_instance->getMousePositionImpl(); }
+        static bool isKeyPressed(KeyCode keyCode) { return s_instance->isKeyPressedImpl(keyCode); }
+        static bool isMouseButtonPressed(MouseCode mouseCode) { return s_instance->isMouseButtonPressedImpl(mouseCode); }
+        static glm::vec2 getMousePosition() { return s_instance->getMousePositionImpl(); }
 
     protected:
         [[nodiscard]] virtual bool isKeyPressedImpl(KeyCode keycode) const = 0;

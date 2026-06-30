@@ -152,7 +152,7 @@ namespace voxl
                 }
             }
 
-            m_window->pollEvents();
+            Window::pollEvents();
 
             if (!m_pendingWorldLoad.empty())
             {

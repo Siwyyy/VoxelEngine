@@ -5,7 +5,7 @@
 namespace voxl
 {
     Window::Window(uint32_t width, uint32_t height, std::string title)
-        : m_width(width), m_height(height), m_title(std::move(title)), m_window(nullptr)
+        : m_width(width), m_height(height), m_title(std::move(title))
     {
         initWindow();
     }

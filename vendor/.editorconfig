@@ -1,0 +1,5 @@
+root = true
+
+[*]
+ij_any_inspections = false
+generated_code = true

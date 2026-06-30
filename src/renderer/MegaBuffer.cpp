@@ -5,7 +5,7 @@
 
 namespace voxl
 {
-    MegaBuffer::MegaBuffer(VkDevice device, VmaAllocator allocator, VkDeviceSize capacity, VkBufferUsageFlags usage)
+    MegaBuffer::MegaBuffer(VmaAllocator allocator, VkDeviceSize capacity, VkBufferUsageFlags usage)
         : m_allocator(allocator)
     {
         const VkBufferCreateInfo bufferInfo{
@@ -15,7 +15,7 @@ namespace voxl
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE
         };
 
-        const VmaAllocationCreateInfo allocInfo{
+        constexpr VmaAllocationCreateInfo allocInfo{
             .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
             .usage = VMA_MEMORY_USAGE_CPU_TO_GPU
         };

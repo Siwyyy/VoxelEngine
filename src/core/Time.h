@@ -23,10 +23,10 @@ namespace voxl
         {
             const auto currentTime = std::chrono::high_resolution_clock::now();
 
-            s_deltaTime = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - s_lastTime).count();
+            s_deltaTime = std::chrono::duration<float>(currentTime - s_lastTime).count();
             s_lastTime  = currentTime;
 
-            s_time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - s_startTime).count();
+            s_time = std::chrono::duration<float>(currentTime - s_startTime).count();
         }
 
         [[nodiscard]] static float getDeltaTime() { return s_deltaTime; }

@@ -78,9 +78,9 @@ namespace voxl
 
         VkDeviceSize vertexMegaSize = 512ULL * 1024 * 1024; // 512 MB
         VkDeviceSize indexMegaSize  = 256ULL * 1024 * 1024; // 256 MB
-        m_megaVertexBuffer          = std::make_unique<MegaBuffer>(m_device, m_allocator, vertexMegaSize,
+        m_megaVertexBuffer          = std::make_unique<MegaBuffer>(m_allocator, vertexMegaSize,
                                                                    VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-        m_megaIndexBuffer = std::make_unique<MegaBuffer>(m_device, m_allocator, indexMegaSize,
+        m_megaIndexBuffer = std::make_unique<MegaBuffer>(m_allocator, indexMegaSize,
                                                          VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
 
         const VkBufferCreateInfo indirectInfo{
@@ -90,7 +90,7 @@ namespace voxl
             .sharingMode = VK_SHARING_MODE_EXCLUSIVE
         };
 
-        const VmaAllocationCreateInfo indirectAllocInfo{
+        constexpr VmaAllocationCreateInfo indirectAllocInfo{
             .flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
             .usage = VMA_MEMORY_USAGE_CPU_TO_GPU
         };
@@ -190,9 +190,9 @@ namespace voxl
         vkResetCommandBuffer(m_commandBuffers[m_currentFrame], 0);
         recordCommandBuffer(m_commandBuffers[m_currentFrame], imageIndex, viewMatrix, chunks);
 
-        const std::array<VkSemaphore, 1> waitSemaphores          = {m_imageAvailableSemaphores[m_currentFrame]};
+        const std::array waitSemaphores                          = {m_imageAvailableSemaphores[m_currentFrame]};
         constexpr std::array<VkPipelineStageFlags, 1> waitStages = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
-        const std::array<VkSemaphore, 1> signalSemaphores        = {m_renderFinishedSemaphores[imageIndex]};
+        const std::array signalSemaphores                        = {m_renderFinishedSemaphores[imageIndex]};
 
         const VkSubmitInfo submitInfo{
             .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -210,7 +210,7 @@ namespace voxl
             throw std::runtime_error("Failed to submit draw command buffer!");
         }
 
-        const std::array<VkSwapchainKHR, 1> swapchains = {m_swapchain};
+        const std::array swapchains = {m_swapchain};
         const VkPresentInfoKHR presentInfo{
             .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
             .waitSemaphoreCount = 1,
@@ -438,9 +438,9 @@ namespace voxl
             imageCount = capabilities.maxImageCount;
         }
 
-        const QueueFamilyIndices indices                 = findQueueFamilies(m_physicalDevice);
-        const std::array<uint32_t, 2> queueFamilyIndices = {
-            indices.graphicsFamily.value_or(0), indices.presentFamily.value_or(0)
+        const auto [graphicsFamily, presentFamily] = findQueueFamilies(m_physicalDevice);
+        const std::array queueFamilyIndices        = {
+            graphicsFamily.value_or(0), presentFamily.value_or(0)
         };
 
         const VkSwapchainCreateInfoKHR createInfo{
@@ -452,11 +452,11 @@ namespace voxl
             .imageExtent = extent,
             .imageArrayLayers = 1,
             .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-            .imageSharingMode = (indices.graphicsFamily != indices.presentFamily)
+            .imageSharingMode = (graphicsFamily != presentFamily)
                                     ? VK_SHARING_MODE_CONCURRENT
                                     : VK_SHARING_MODE_EXCLUSIVE,
-            .queueFamilyIndexCount = (indices.graphicsFamily != indices.presentFamily) ? 2u : 0u,
-            .pQueueFamilyIndices = (indices.graphicsFamily != indices.presentFamily)
+            .queueFamilyIndexCount = (graphicsFamily != presentFamily) ? 2u : 0u,
+            .pQueueFamilyIndices = (graphicsFamily != presentFamily)
                                        ? queueFamilyIndices.data()
                                        : nullptr,
             .preTransform = capabilities.currentTransform,
@@ -534,7 +534,7 @@ namespace voxl
             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
         };
 
-        const VmaAllocationCreateInfo allocInfo{
+        constexpr VmaAllocationCreateInfo allocInfo{
             .usage = VMA_MEMORY_USAGE_GPU_ONLY
         };
 
@@ -603,11 +603,11 @@ namespace voxl
         m_renderFinishedSemaphores.resize(m_swapchainImageViews.size());
         m_inFlightFences.resize(MAX_FRAMES_IN_FLIGHT);
 
-        const VkSemaphoreCreateInfo semaphoreInfo{
+        constexpr VkSemaphoreCreateInfo semaphoreInfo{
             .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO
         };
 
-        const VkFenceCreateInfo fenceInfo{
+        constexpr VkFenceCreateInfo fenceInfo{
             .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             .flags = VK_FENCE_CREATE_SIGNALED_BIT
         };
@@ -632,7 +632,7 @@ namespace voxl
 
     void VulkanContext::createQueryPool()
     {
-        const VkQueryPoolCreateInfo queryPoolInfo{
+        constexpr VkQueryPoolCreateInfo queryPoolInfo{
             .sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
             .queryType = VK_QUERY_TYPE_TIMESTAMP,
             .queryCount = 2 * 2 // MAX_FRAMES_IN_FLIGHT * 2
@@ -778,7 +778,7 @@ namespace voxl
                            sizeof(glm::mat4), &mvp);
 
         std::array<VkBuffer, 1> vertexBuffers = {m_megaVertexBuffer->getBuffer()};
-        std::array<VkDeviceSize, 1> offsets   = {0};
+        std::array<VkDeviceSize, 1> offsets   = {};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers.data(), offsets.data());
         vkCmdBindIndexBuffer(commandBuffer, m_megaIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
@@ -1012,23 +1012,21 @@ namespace voxl
         {
             return capabilities.currentExtent;
         }
-        else
-        {
-            int width, height;
-            glfwGetFramebufferSize(window, &width, &height);
 
-            VkExtent2D actualExtent = {
-                .width  = static_cast<uint32_t>(width),
-                .height = static_cast<uint32_t>(height)
-            };
+        int width, height;
+        glfwGetFramebufferSize(window, &width, &height);
 
-            actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width,
-                                            capabilities.maxImageExtent.width);
-            actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height,
-                                             capabilities.maxImageExtent.height);
+        VkExtent2D actualExtent = {
+            .width = static_cast<uint32_t>(width),
+            .height = static_cast<uint32_t>(height)
+        };
 
-            return actualExtent;
-        }
+        actualExtent.width = std::clamp(actualExtent.width, capabilities.minImageExtent.width,
+                                        capabilities.maxImageExtent.width);
+        actualExtent.height = std::clamp(actualExtent.height, capabilities.minImageExtent.height,
+                                         capabilities.maxImageExtent.height);
+
+        return actualExtent;
     }
 
     bool VulkanContext::checkValidationLayerSupport()

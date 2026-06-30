@@ -4,7 +4,6 @@
 #include <expected>
 #include <format>
 #include <fstream>
-#include <stdexcept>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -35,7 +34,7 @@ namespace voxl
             return std::unexpected(std::format("Failed to open file: {}", fullPath.string()));
         }
 
-        const size_t fileSize = static_cast<size_t>(file.tellg());
+        const size_t fileSize = file.tellg();
         std::vector<char> buffer(fileSize);
 
         file.seekg(0);

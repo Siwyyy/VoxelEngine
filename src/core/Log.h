@@ -1,8 +1,9 @@
 #pragma once
 
-namespace voxl {
-
-    class Log {
+namespace voxl
+{
+    class Log
+    {
     public:
         // Na razie tylko przygotowuje konsolę
         static void init();
@@ -11,5 +12,4 @@ namespace voxl {
         // static void info(const std::string& message);
         // static void error(const std::string& message);
     };
-
 } // namespace voxl

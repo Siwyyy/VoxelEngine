@@ -2,6 +2,9 @@
 
 #include <array>
 #include <fstream>
+#include <mdspan>
+#include <ranges>
+#include <utility>
 
 #include <FastNoiseLite/FastNoiseLite.h>
 
@@ -31,7 +34,7 @@ namespace voxl
         m_noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
         m_noise.SetFrequency(0.003f); // Bardzo niska częstotliwość dla długich, łagodnych wzgórz
 
-        for (auto& slice: m_blocks) for (auto& row: slice) for (auto& block: row) block = BlockType::Air;
+        m_blocks.fill(BlockType::Air);
     }
 
     Chunk::~Chunk()
@@ -48,36 +51,35 @@ namespace voxl
 
     void Chunk::generateTerrain()
     {
-        for (int x = 0; x < CHUNK_SIZE; ++x)
+        auto coords = std::views::cartesian_product(std::views::iota(0, static_cast<int>(CHUNK_SIZE)),
+                                                    std::views::iota(0, static_cast<int>(CHUNK_SIZE)));
+        const std::mdspan<Block, std::extents<size_t, CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE>> span(m_blocks.data());
+
+        for (const auto [x,z]: coords)
         {
-            for (int z = 0; z < CHUNK_SIZE; ++z)
+            const float globalX = m_position.x + static_cast<float>(x);
+            const float globalZ = m_position.z + static_cast<float>(z);
+
+            const float noiseValue  = m_noise.GetNoise(globalX, globalZ);
+            const int terrainHeight = static_cast<int>((noiseValue + 1.0f) * 0.5f * 60.0f) + 15;
+
+            for (const auto y: std::views::iota(0ULL, CHUNK_SIZE))
             {
-                const float globalX = m_position.x + static_cast<float>(x);
-                const float globalZ = m_position.z + static_cast<float>(z);
-
-                const float noiseValue  = m_noise.GetNoise(globalX, globalZ);
-                const int terrainHeight = static_cast<int>((noiseValue + 1.0f) * 0.5f * 60.0f) + 15;
-
-                for (int y = 0; y < CHUNK_SIZE; ++y)
+                if (const int globalY = static_cast<int>(std::round(m_position.y)) + static_cast<int>(y); globalY == terrainHeight - 1)
                 {
-                    const int globalY = static_cast<int>(std::round(m_position.y)) + y;
-
-                    if (globalY == terrainHeight - 1)
-                    {
-                        m_blocks[x][y][z] = BlockType::Grass;
-                    }
-                    else if (globalY > terrainHeight - 4 && globalY < terrainHeight)
-                    {
-                        m_blocks[x][y][z] = BlockType::Dirt;
-                    }
-                    else if (globalY < terrainHeight)
-                    {
-                        m_blocks[x][y][z] = BlockType::Stone;
-                    }
-                    else
-                    {
-                        m_blocks[x][y][z] = BlockType::Air;
-                    }
+                    span[x, y, z] = BlockType::Grass;
+                }
+                else if (globalY > terrainHeight - 4 && globalY < terrainHeight)
+                {
+                    span[x, y, z] = BlockType::Dirt;
+                }
+                else if (globalY < terrainHeight)
+                {
+                    span[x, y, z] = BlockType::Stone;
+                }
+                else
+                {
+                    span[x, y, z] = BlockType::Air;
                 }
             }
         }
@@ -106,16 +108,16 @@ namespace voxl
         for (int d = 0; d < 3; ++d)
         {
             int i, j, k, l, w, h;
-            int u                   = (d + 1) % 3;
-            int v                   = (d + 2) % 3;
-            std::array < int, 3 > x = {0, 0, 0};
-            std::array < int, 3 > q = {0, 0, 0};
-            q[d]                    = 1;
+            int u        = (d + 1) % 3;
+            int v        = (d + 2) % 3;
+            std::array x = {0, 0, 0};
+            std::array q = {0, 0, 0};
+            q[d]         = 1;
 
-            std::array < int, 3 > dims = {CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE};
-            int dim_d                  = dims[d];
-            int dim_u                  = dims[u];
-            int dim_v                  = dims[v];
+            std::array<int, 3> dims = {CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE};
+            int dim_d               = dims[d];
+            int dim_u               = dims[u];
+            int dim_v               = dims[v];
 
             struct MaskCell
             {
@@ -189,10 +191,10 @@ namespace voxl
                             x[u] = i;
                             x[v] = j;
 
-                            std::array < int, 3 > du = {0, 0, 0};
-                            du[u]                    = w;
-                            std::array < int, 3 > dv = {0, 0, 0};
-                            dv[v]                    = h;
+                            std::array du = {0, 0, 0};
+                            du[u]         = w;
+                            std::array dv = {0, 0, 0};
+                            dv[v]         = h;
 
                             glm::vec3 v1(x[0], x[1], x[2]);
                             v1[d] += 1.0f;
@@ -296,13 +298,14 @@ namespace voxl
 
     bool Chunk::setBlock(int x, int y, int z, Block block)
     {
-        if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE)
+        if (x >= 0 && std::cmp_less(x, CHUNK_SIZE) && y >= 0 && std::cmp_less(y, CHUNK_SIZE) && z >= 0 && std::cmp_less(z, CHUNK_SIZE))
         {
-            if (m_blocks[x][y][z].type != block.type || m_blocks[x][y][z].metadata != block.metadata)
+            const std::mdspan<Block, std::extents<size_t, CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE>> span(m_blocks.data());
+            if (span[x, y, z].type != block.type || span[x, y, z].metadata != block.metadata)
             {
-                m_blocks[x][y][z] = block;
-                m_isDirty         = true;
-                m_isSaveDirty     = true;
+                span[x, y, z] = block;
+                m_isDirty     = true;
+                m_isSaveDirty = true;
                 return true;
             }
         }
@@ -311,9 +314,10 @@ namespace voxl
 
     Block Chunk::getBlock(const int x, const int y, const int z) const
     {
-        if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < CHUNK_SIZE && z >= 0 && z < CHUNK_SIZE)
+        if (x >= 0 && std::cmp_less(x, CHUNK_SIZE) && y >= 0 && std::cmp_less(y, CHUNK_SIZE) && z >= 0 && std::cmp_less(z, CHUNK_SIZE))
         {
-            return m_blocks[x][y][z];
+            const std::mdspan<const Block, std::extents<size_t, CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE>> span(m_blocks.data());
+            return span[x, y, z];
         }
 
         const float globalX = m_position.x + static_cast<float>(x);
@@ -339,27 +343,21 @@ namespace voxl
         std::ofstream out(filepath, std::ios::binary);
         if (!out) return false;
 
-        BlockType currentType = m_blocks[0][0][0];
+        BlockType currentType = m_blocks[0].type;
         uint32_t count        = 0;
 
-        for (const auto& slice: m_blocks)
+        for (const auto& block: m_blocks)
         {
-            for (const auto& row: slice)
+            if (block.type == currentType)
             {
-                for (const auto& block: row)
-                {
-                    if (block == currentType)
-                    {
-                        count++;
-                    }
-                    else
-                    {
-                        out.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
-                        out.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
-                        currentType = block;
-                        count       = 1;
-                    }
-                }
+                count++;
+            }
+            else
+            {
+                out.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
+                out.write(reinterpret_cast<const char*>(&count), sizeof(uint32_t));
+                currentType = block.type;
+                count       = 1;
             }
         }
         out.write(reinterpret_cast<const char*>(&currentType), sizeof(BlockType));
@@ -374,8 +372,8 @@ namespace voxl
         std::ifstream in(filepath, std::ios::binary);
         if (!in) return false;
 
-        int x = 0, y = 0, z = 0;
-        while (in && x < CHUNK_SIZE)
+        size_t index = 0;
+        while (in && index < m_blocks.size())
         {
             BlockType type;
             uint32_t count;
@@ -383,21 +381,9 @@ namespace voxl
             if (in.eof()) break;
             in.read(reinterpret_cast<char*>(&count), sizeof(uint32_t));
 
-            for (uint32_t i = 0; i < count; ++i)
+            for (uint32_t i = 0; i < count && index < m_blocks.size(); ++i)
             {
-                m_blocks[x][y][z] = type;
-                z++;
-                if (z >= CHUNK_SIZE)
-                {
-                    z = 0;
-                    y++;
-                    if (y >= CHUNK_SIZE)
-                    {
-                        y = 0;
-                        x++;
-                        if (x >= CHUNK_SIZE) break;
-                    }
-                }
+                m_blocks[index++] = {type, 0};
             }
         }
         m_isDirty = false;

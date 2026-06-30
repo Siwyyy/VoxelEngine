@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <string>
 #include <vector>
 
@@ -39,7 +40,7 @@ namespace voxl
     class Chunk
     {
     public:
-        static constexpr int CHUNK_SIZE = 64;
+        static constexpr size_t CHUNK_SIZE = 64;
 
         Chunk(glm::vec3 position, MegaBuffer* vb, MegaBuffer* ib);
         Chunk(Chunk&&)            = delete;
@@ -77,7 +78,7 @@ namespace voxl
         uint32_t m_indexCount = 0;
 
         FastNoiseLite m_noise;
-        std::array<std::array<std::array<Block, CHUNK_SIZE>, CHUNK_SIZE>, CHUNK_SIZE> m_blocks{};
+        std::array<Block, CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE> m_blocks{};
 
         bool m_isDirty     = false;
         bool m_isSaveDirty = false;
