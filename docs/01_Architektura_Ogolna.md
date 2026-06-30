@@ -1,20 +1,21 @@
 # 🎮 Architektura Ogólna Silnika
 
-W tym artykule opisano ogólną architekturę silnika **[[api/VoxelEngine|VoxelEngine]]**, cykl życia aplikacji, przebieg pętli głównej (Game Loop) oraz zarządzanie stanem sesji użytkownika.
+Wszystkie komponenty silnika są zdefiniowane i zaimplementowane w przestrzeni nazw **`voxl`**. W tym artykule opisano architekturę silnika **[[api/VoxelEngine|VoxelEngine]]**, cykl życia aplikacji, przebieg pętli głównej (Game Loop) oraz strukturę wejścia i czasu.
 
 ---
 
 ## 🏗️ Diagram Architektury (Kluczowe Komponenty)
 
-Silnik jest zaprojektowany z wyraźnym podziałem odpowiedzialności. Główną klasą koordynującą jest [[api/VoxelEngine|VoxelEngine]]. Poniższy diagram przedstawia relacje między komponentami:
+Silnik jest zaprojektowany z wyraźnym podziałem odpowiedzialności. Główną klasą koordynującą jest [[api/VoxelEngine|VoxelEngine]]. Poniższy diagram przedstawia relacje między komponentami w przestrzeni `voxl`:
 
 ```mermaid
 classDiagram
     class VoxelEngine {
-        -std::unique_ptr~Window~ m_window
-        -std::unique_ptr~Input~ m_input
-        -std::unique_ptr~Camera~ m_camera
-        -std::unique_ptr~World~ m_world
+        -unique_ptr~Window~ m_window
+        -unique_ptr~Input~ m_input
+        -ActionManager m_actionManager
+        -unique_ptr~Camera~ m_camera
+        -unique_ptr~World~ m_world
         -VulkanContext m_vulkanContext
         +run()
         -mainLoop()
@@ -28,28 +29,34 @@ classDiagram
     }
     class Input {
         <<interface>>
-        +isKeyPressed() bool
-        +isMouseButtonPressed() bool
+        +isKeyPressed(KeyCode) bool
+        +isMouseButtonPressed(MouseCode) bool
     }
     class GLFWInput {
-        +isKeyPressed() bool
+        +isKeyPressed(KeyCode) bool
+    }
+    class ActionManager {
+        -unordered_map~InputAction, vector~InputBinding~ ~ m_actionMap
+        +bindAction(action, binding)
+        +isActionPressed(action) bool
     }
     class Camera {
-        -glm::vec3 m_position
-        -glm::mat4 m_viewMatrix
+        -const ActionManager& m_actionManager
+        -vec3 m_position
+        -mat4 m_viewMatrix
         +update(deltaTime)
-        +getViewMatrix() glm::mat4
+        +getViewMatrix() mat4
     }
     class World {
-        -std::unordered_map~ChunkCoord, unique_ptr~Chunk~~ m_chunkMap
-        -std::unique_ptr~ThreadPool~ m_threadPool
+        -unordered_map~ChunkCoord, unique_ptr~Chunk~ ~ m_chunkMap
+        -unique_ptr~ThreadPool~ m_threadPool
         +update(cameraPos, cameraFront, deltaTime)
         +processPlayerInteraction()
     }
     class VulkanContext {
         -VkDevice m_device
-        -std::unique_ptr~MegaBuffer~ m_megaVertexBuffer
-        -std::unique_ptr~MegaBuffer~ m_megaIndexBuffer
+        -unique_ptr~MegaBuffer~ m_megaVertexBuffer
+        -unique_ptr~MegaBuffer~ m_megaIndexBuffer
         +drawFrame(viewMatrix, chunks)
     }
     class Time {
@@ -60,17 +67,19 @@ classDiagram
         +getTime() float
     }
     class ThreadPool {
-        -std::vector~std::thread~ m_workers
+        -vector~thread~ m_workers
         +enqueue(f)
     }
 
     VoxelEngine --> Window : Posiada i zarządza cyklem życia
     VoxelEngine --> Input : Korzysta z wejścia
+    VoxelEngine --> ActionManager : Inicjalizuje i konfiguruje
     VoxelEngine --> Camera : Posiada (pozycja gracza)
-    VoxelEngine --> World : Zarządza stanem voxelowym
+    VoxelEngine --> World : Zarządza stanem wokselowym
     VoxelEngine --> VulkanContext : Posiada kontekst graficzny
     VoxelEngine ..> Time : Inicjalizuje i odpytuje tick
     GLFWInput ..|> Input : Implementuje
+    Camera --> ActionManager : Odpytuje stany akcji ruchowych
     World --> VulkanContext : Referencja do alokacji buforów
     World --> Chunk : Zawiera i zarządza
     World --> ThreadPool : Zleca zadania w tle
@@ -91,7 +100,7 @@ Każde przejście pętli głównej (`mainLoop()`) wykonuje następujące operacj
 
 ```mermaid
 flowchart TD
-    Start([Początek Klatki]) --> Time[Zaktualizuj czas gry za pomocą [[api/Time|Time]]::tick]
+    Start([Początek Klatki]) --> Time[Zaktualizuj czas gry za pomocą Time::tick]
     Time --> Poll[Window::pollEvents - przetwórz zdarzenia systemu operacyjnego]
     Poll --> WorldLoad{Czy zażądało zmiany świata?}
     

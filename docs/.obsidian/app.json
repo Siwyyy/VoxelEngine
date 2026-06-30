@@ -4,5 +4,7 @@
   "showInlineTitle": false,
   "promptDelete": false,
   "defaultViewMode": "preview",
-  "showLineNumber": true
+  "showLineNumber": true,
+  "readableLineLength": false,
+  "strictLineBreaks": false
 }

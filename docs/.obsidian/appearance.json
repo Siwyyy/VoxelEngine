@@ -2,5 +2,8 @@
   "showViewHeader": true,
   "showRibbon": true,
   "baseFontSizeAction": true,
-  "baseFontSize": 16
+  "baseFontSize": 15,
+  "enabledCssSnippets": [
+    "mermaid-custom"
+  ]
 }

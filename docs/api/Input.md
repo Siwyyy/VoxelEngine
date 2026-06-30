@@ -1,99 +1,160 @@
-# Klasa Input i GLFWInput
+# System Obsługi Wejścia (`voxl::Input`, `voxl::ActionManager`)
 
-Klasa **`Input`** oraz jej platformowa implementacja **`GLFWInput`** zarządzają wejściem od użytkownika (klawiatura, mysz). System ten opiera się na **wzorcu Singleton**, dzięki czemu stan klawiszy lub pozycję myszy można sprawdzić w dowolnym miejscu w kodzie silnika za pomocą prostego API statycznego.
+System obsługi wejścia w silniku odpowiada za przechwytywanie zdarzeń z klawiatury i myszy oraz ich mapowanie na logiczne akcje gry. Składa się z niskopoziomowego odpytywania stanu urządzeń (Singleton `Input`) oraz wysokopoziomowego menedżera akcji (`ActionManager`).
 
-Definicja interfejsu znajduje się w pliku [Input.h](../../src/input/Input.h), klasa dziedzicząca w [GLFWInput.h](../../src/input/GLFWInput.h), a jej implementacja w [GLFWInput.cpp](../../src/input/GLFWInput.cpp).
-
----
-
-## 🏗️ Definicja Interfejsu Bazowego (`Input.h`)
-
-```cpp
-class Input
-{
-public:
-    Input()                        = default;
-    Input(const Input&)            = delete;
-    Input& operator=(const Input&) = delete;
-    Input(Input&&)                 = delete;
-    Input& operator=(Input&&)      = delete;
-    virtual ~Input()               = default;
-
-    inline static bool isKeyPressed(const int32_t keycode) { return s_instance->isKeyPressedImpl(keycode); }
-    inline static bool isMouseButtonPressed(const int32_t button) { return s_instance->isMouseButtonPressedImpl(button); }
-    inline static glm::vec2 getMousePosition() { return s_instance->getMousePositionImpl(); }
-
-protected:
-    [[nodiscard]] virtual bool isKeyPressedImpl(int32_t keycode) const = 0;
-    [[nodiscard]] virtual bool isMouseButtonPressedImpl(int32_t button) const = 0;
-    [[nodiscard]] virtual glm::vec2 getMousePositionImpl() const = 0;
-
-public:
-    static Input* s_instance;
-};
-```
+Definicje systemu znajdują się w katalogu [src/input/](../../src/input/):
+* [Input.h](../../src/input/Input.h) oraz [GLFWInput.h](../../src/input/GLFWInput.h) / [GLFWInput.cpp](../../src/input/GLFWInput.cpp) – warstwa sprzętowa.
+* [InputCodes.h](../../src/input/InputCodes.h) – kody klawiszy i przycisków myszy.
+* [InputAction.h](../../src/input/InputAction.h) – definicja logicznych akcji.
+* [ActionManager.h](../../src/input/ActionManager.h) / [ActionManager.cpp](../../src/input/ActionManager.cpp) – mapowanie i weryfikacja akcji.
 
 ---
 
-## ⚙️ Definicja Klasy GLFWInput (`GLFWInput.h`)
+## ⌨️ Kody Wejścia (`KeyCode`, `MouseCode`)
+
+Silnik definiuje silnie typowane typy wyliczeniowe (enum class) dla klawiatury oraz myszy:
 
 ```cpp
-class GLFWInput final : public Input
+namespace voxl
 {
-public:
-    explicit GLFWInput(GLFWwindow* window);
+    enum class KeyCode : uint32_t
+    {
+        Space        = 32,
+        A            = 65,
+        // ... (kody klawiszy klawiatury zgodne z GLFW)
+        LeftShift    = 340,
+        LeftControl  = 341,
+        Escape       = 256,
+        Tab          = 258
+    };
 
-private:
-    [[nodiscard]] bool isKeyPressedImpl(int32_t keycode) const override;
-    [[nodiscard]] bool isMouseButtonPressedImpl(int32_t button) const override;
-    [[nodiscard]] glm::vec2 getMousePositionImpl() const override;
-
-    GLFWwindow* m_window;
-};
+    enum class MouseCode : uint32_t
+    {
+        Left   = 1,
+        Right  = 2,
+        Middle = 3
+        // ...
+    };
+}
 ```
 
 ---
 
-## 🔑 Implementacja Metod (`GLFWInput.cpp`)
+## 🏗️ Odpytywanie Stanu Sprzętowego (`Input`, `GLFWInput`)
 
-### 1. Inicjalizacja Singletonu
-Podczas tworzenia instancji `GLFWInput` w konstruktorze przypisywana jest statyczna instancja `s_instance`:
+Klasa bazowa **`Input`** definiuje interfejs do sprawdzania surowego stanu klawiszy i myszy. Działa jako statyczny singleton (`s_instance`).
+
+### Definicja interfejsu (`Input.h`)
 ```cpp
-GLFWInput::GLFWInput(GLFWwindow* window)
-    : m_window(window)
+namespace voxl
 {
-    s_instance = this;
+    class Input
+    {
+    public:
+        Input()                        = default;
+        virtual ~Input()               = default;
+
+        inline static bool isKeyPressed(KeyCode keyCode) { return s_instance->isKeyPressedImpl(keyCode); }
+        inline static bool isMouseButtonPressed(MouseCode mouseCode) { return s_instance->isMouseButtonPressedImpl(mouseCode); }
+        inline static glm::vec2 getMousePosition() { return s_instance->getMousePositionImpl(); }
+
+    protected:
+        virtual bool isKeyPressedImpl(KeyCode keycode) const = 0;
+        virtual bool isMouseButtonPressedImpl(MouseCode button) const = 0;
+        virtual glm::vec2 getMousePositionImpl() const = 0;
+
+    public:
+        static Input* s_instance;
+    };
 }
 ```
 
-### 2. `bool isKeyPressedImpl(const int32_t keycode) const`
-Odpytuje stan wybranego klawisza za pomocą funkcji GLFW `glfwGetKey`. Zwraca `true`, jeśli klawisz jest wciśnięty (`GLFW_PRESS`) lub przytrzymany (`GLFW_REPEAT`):
+### Implementacja GLFW (`GLFWInput.cpp`)
+Platformowa implementacja `GLFWInput` implementuje metody wirtualne, odpytując bezpośrednio bibliotekę GLFW:
 ```cpp
-bool GLFWInput::isKeyPressedImpl(const int32_t keycode) const
+namespace voxl
 {
-    const auto state = glfwGetKey(m_window, keycode);
-    return state == GLFW_PRESS || state == GLFW_REPEAT;
+    bool GLFWInput::isKeyPressedImpl(KeyCode keycode) const
+    {
+        auto state = glfwGetKey(m_window, static_cast<int32_t>(keycode));
+        return state == GLFW_PRESS || state == GLFW_REPEAT;
+    }
+
+    bool GLFWInput::isMouseButtonPressedImpl(MouseCode button) const
+    {
+        auto state = glfwGetMouseButton(m_window, static_cast<int32_t>(button));
+        return state == GLFW_PRESS;
+    }
 }
 ```
 
-### 3. `bool isMouseButtonPressedImpl(const int32_t button) const`
-Sprawdza kliknięcie przycisków myszy przy użyciu `glfwGetMouseButton`. Zwraca `true` tylko w momencie wciśnięcia (`GLFW_PRESS`):
+---
+
+## 🎯 System Akcji (`InputAction`, `ActionManager`)
+
+Aby uniezależnić logikę gry (np. ruch kamery) od konkretnych fizycznych klawiszy, silnik definiuje pojęcie **akcji wejściowych**.
+
+### Definicja Akcji (`InputAction.h`)
 ```cpp
-bool GLFWInput::isMouseButtonPressedImpl(const int32_t button) const
+namespace voxl
 {
-    const auto state = glfwGetMouseButton(m_window, button);
-    return state == GLFW_PRESS;
+    enum class InputAction : uint32_t
+    {
+        MoveForward,
+        MoveBackward,
+        MoveLeft,
+        MoveRight,
+        MoveUp,
+        MoveDown,
+        Interact,
+        SecondaryInteract,
+        ToggleCursor,
+        Exit
+    };
 }
 ```
 
-### 4. `glm::vec2 getMousePositionImpl() const`
-Pobiera bezwzględne współrzędne kursora myszy na ekranie w pikselach:
+### Menedżer Akcji (`ActionManager`)
+Klasa `ActionManager` odpowiada za przypisywanie fizycznych kodów klawiszy do akcji oraz weryfikację, czy dana akcja jest wciśnięta. Akcja może być przypisana do typu `KeyCode` lub `MouseCode` (za pomocą typu `std::variant`).
+
 ```cpp
-glm::vec2 GLFWInput::getMousePositionImpl() const
+namespace voxl
 {
-    double x_pos, y_pos;
-    glfwGetCursorPos(m_window, &x_pos, &y_pos);
-    return {static_cast<float>(x_pos), static_cast<float>(y_pos)};
+    using InputBinding = std::variant<KeyCode, MouseCode>;
+
+    class ActionManager
+    {
+    public:
+        void bindAction(InputAction action, InputBinding binding);
+        void clearAction(InputAction action);
+        
+        bool isActionPressed(InputAction action) const;
+
+    private:
+        std::unordered_map<InputAction, std::vector<InputBinding>> m_actionMap;
+    };
+}
+```
+
+Implementacja `isActionPressed` sprawdza wszystkie powiązane klawisze/przyciski dla danej akcji:
+```cpp
+bool ActionManager::isActionPressed(InputAction action) const
+{
+    auto it = m_actionMap.find(action);
+    if (it == m_actionMap.end()) return false;
+
+    return std::ranges::any_of(it->second, [](const InputBinding& binding)
+    {
+        if (std::holds_alternative<KeyCode>(binding))
+        {
+            return Input::isKeyPressed(std::get<KeyCode>(binding));
+        }
+        if (std::holds_alternative<MouseCode>(binding))
+        {
+            return Input::isMouseButtonPressed(std::get<MouseCode>(binding));
+        }
+        return false;
+    });
 }
 ```
 
@@ -101,6 +162,5 @@ glm::vec2 GLFWInput::getMousePositionImpl() const
 
 ## 🔗 Relacje z innymi klasami skarbca
 
-* **[[api/Window|Window]]** — `GLFWInput` wymaga wskaźnika do okna GLFW w celu odpytywania stanów wejścia.
-* **[[api/VoxelEngine|VoxelEngine]]** — silnik inicjalizuje obiekt `GLFWInput` na początku działania i odpytuje go o klawisz wyjścia (`ESC`) lub przełączenie trybu kursora (`TAB`).
-* **[[api/Camera|Camera]]** — kamera odpytuje `Input::isKeyPressed` o ruchy postaci (`W, A, S, D, Space, Shift`) i pozycję myszy w każdej klatce.
+* **[[api/VoxelEngine|VoxelEngine]]** — inicjalizuje instancję `GLFWInput` i rejestruje domyślne powiązania akcji (np. `bindAction(InputAction::MoveForward, KeyCode::W)`).
+* **[[api/Camera|Camera]]** — pobiera referencję do `ActionManager` i sprawdza stany akcji ruchowych (`MoveForward`, `MoveLeft` itd.) zamiast bezpośrednio odpytywać stan klawiatury.

@@ -9,76 +9,79 @@ Definicja klasy znajduje się w pliku [VulkanContext.h](../../src/renderer/Vulka
 ## 🏗️ Kluczowe pola i metody klasy (`VulkanContext.h`)
 
 ```cpp
-class VulkanContext
+namespace voxl
 {
-public:
-    VulkanContext();
-    ~VulkanContext();
+    class VulkanContext
+    {
+    public:
+        VulkanContext();
+        ~VulkanContext();
 
-    void init(GLFWwindow* window);
-    void cleanup();
-    void deviceWaitIdle() const;
-    void drawFrame(const glm::mat4& viewMatrix, const std::vector<Chunk*>& chunks);
+        void init(GLFWwindow* window);
+        void cleanup();
+        void deviceWaitIdle() const;
+        void drawFrame(const glm::mat4& viewMatrix, const std::vector<Chunk*>& chunks);
 
-    void initImGui(GLFWwindow* window) const;
-    static void cleanupImGui();
-    static void renderImGui(VkCommandBuffer commandBuffer);
+        void initImGui(GLFWwindow* window) const;
+        static void cleanupImGui();
+        static void renderImGui(VkCommandBuffer commandBuffer);
 
-    [[nodiscard]] VkDevice getDevice() const { return m_device; }
-    [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
-    [[nodiscard]] VmaAllocator getAllocator() const { return m_allocator; }
+        [[nodiscard]] VkDevice getDevice() const { return m_device; }
+        [[nodiscard]] VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
+        [[nodiscard]] VmaAllocator getAllocator() const { return m_allocator; }
 
-    [[nodiscard]] uint32_t getDrawnChunksCount() const { return m_drawnChunksCount; }
-    [[nodiscard]] float getGpuFrameTime() const { return m_gpuFrameTime; }
+        [[nodiscard]] uint32_t getDrawnChunksCount() const { return m_drawnChunksCount; }
+        [[nodiscard]] float getGpuFrameTime() const { return m_gpuFrameTime; }
 
-    [[nodiscard]] MegaBuffer* getMegaVertexBuffer() const { return m_megaVertexBuffer.get(); }
-    [[nodiscard]] MegaBuffer* getMegaIndexBuffer() const { return m_megaIndexBuffer.get(); }
+        [[nodiscard]] MegaBuffer* getMegaVertexBuffer() const { return m_megaVertexBuffer.get(); }
+        [[nodiscard]] MegaBuffer* getMegaIndexBuffer() const { return m_megaIndexBuffer.get(); }
 
-private:
-    VkInstance m_instance                     = nullptr;
-    VkDebugUtilsMessengerEXT m_debugMessenger = nullptr;
-    VkSurfaceKHR m_surface                    = VK_NULL_HANDLE;
-    VkPhysicalDevice m_physicalDevice         = VK_NULL_HANDLE;
-    VkDevice m_device                         = VK_NULL_HANDLE;
-    VkQueue m_graphicsQueue                   = VK_NULL_HANDLE;
-    VkQueue m_presentQueue                    = VK_NULL_HANDLE;
+    private:
+        VkInstance m_instance                     = nullptr;
+        VkDebugUtilsMessengerEXT m_debugMessenger = nullptr;
+        VkSurfaceKHR m_surface                    = VK_NULL_HANDLE;
+        VkPhysicalDevice m_physicalDevice         = VK_NULL_HANDLE;
+        VkDevice m_device                         = VK_NULL_HANDLE;
+        VkQueue m_graphicsQueue                   = VK_NULL_HANDLE;
+        VkQueue m_presentQueue                    = VK_NULL_HANDLE;
 
-    VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
-    std::vector<VkImage> m_swapchainImages;
-    VkFormat m_swapchainImageFormat{};
-    VkExtent2D m_swapchainExtent{};
-    std::vector<VkImageView> m_swapchainImageViews;
+        VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
+        std::vector<VkImage> m_swapchainImages;
+        VkFormat m_swapchainImageFormat{};
+        VkExtent2D m_swapchainExtent{};
+        std::vector<VkImageView> m_swapchainImageViews;
 
-    VkCommandPool m_commandPool = VK_NULL_HANDLE;
-    std::vector<VkCommandBuffer> m_commandBuffers;
+        VkCommandPool m_commandPool = VK_NULL_HANDLE;
+        std::vector<VkCommandBuffer> m_commandBuffers;
 
-    VkImage m_depthImage                 = VK_NULL_HANDLE;
-    VmaAllocation m_depthImageAllocation = VK_NULL_HANDLE;
-    VkImageView m_depthImageView         = VK_NULL_HANDLE;
-    VkFormat m_depthFormat{};
+        VkImage m_depthImage                 = VK_NULL_HANDLE;
+        VmaAllocation m_depthImageAllocation = VK_NULL_HANDLE;
+        VkImageView m_depthImageView         = VK_NULL_HANDLE;
+        VkFormat m_depthFormat{};
 
-    std::unique_ptr<class GraphicsPipeline> m_graphicsPipeline;
+        std::unique_ptr<class GraphicsPipeline> m_graphicsPipeline;
 
-    std::vector<VkSemaphore> m_imageAvailableSemaphores;
-    std::vector<VkSemaphore> m_renderFinishedSemaphores;
-    std::vector<VkFence> m_inFlightFences;
-    uint32_t m_currentFrame = 0;
+        std::vector<VkSemaphore> m_imageAvailableSemaphores;
+        std::vector<VkSemaphore> m_renderFinishedSemaphores;
+        std::vector<VkFence> m_inFlightFences;
+        uint32_t m_currentFrame = 0;
 
-    VkQueryPool m_queryPool = VK_NULL_HANDLE;
-    float m_timestampPeriod = 1.0f;
-    float m_gpuFrameTime    = 0.0f;
-    bool m_firstFrame[2]    = {true, true};
+        VkQueryPool m_queryPool = VK_NULL_HANDLE;
+        float m_timestampPeriod = 1.0f;
+        float m_gpuFrameTime    = 0.0f;
+        bool m_firstFrame[2]    = {true, true};
 
-    std::unique_ptr<MegaBuffer> m_megaVertexBuffer;
-    std::unique_ptr<MegaBuffer> m_megaIndexBuffer;
+        std::unique_ptr<MegaBuffer> m_megaVertexBuffer;
+        std::unique_ptr<MegaBuffer> m_megaIndexBuffer;
 
-    VkBuffer m_indirectBuffer                = VK_NULL_HANDLE;
-    VmaAllocation m_indirectBufferAllocation = VK_NULL_HANDLE;
-    void* m_indirectMappedData               = nullptr;
-    uint32_t m_maxIndirectCommands           = 30000;
+        VkBuffer m_indirectBuffer                = VK_NULL_HANDLE;
+        VmaAllocation m_indirectBufferAllocation = VK_NULL_HANDLE;
+        void* m_indirectMappedData               = nullptr;
+        uint32_t m_maxIndirectCommands           = 30000;
 
-    uint32_t m_drawnChunksCount = 0;
-};
+        uint32_t m_drawnChunksCount = 0;
+    };
+}
 ```
 
 ---

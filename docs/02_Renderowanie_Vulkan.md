@@ -73,10 +73,10 @@ gantt
     dateFormat  HH:mm
     axisFormat %H:%M
     section MegaVertexBuffer
-    Chunk 1 (Offset: 0, Rozmiar: 12KB) :active, c1, 00:00, 00:10
+    Chunk 1 (Offset 0 - Rozmiar 12KB) :active, c1, 00:00, 00:10
     Wolna przestrzeń : c2, 00:10, 00:15
-    Chunk 2 (Offset: 18KB, Rozmiar: 24KB) :active, c3, 00:15, 00:35
-    Chunk 3 (Offset: 42KB, Rozmiar: 8KB) :active, c4, 00:35, 00:45
+    Chunk 2 (Offset 18KB - Rozmiar 24KB) :active, c3, 00:15, 00:35
+    Chunk 3 (Offset 42KB - Rozmiar 8KB) :active, c4, 00:35, 00:45
     Wolna przestrzeń : c5, 00:45, 01:00
 ```
 

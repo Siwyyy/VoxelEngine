@@ -44,13 +44,13 @@ Maksymalny zasięg interakcji gracza z blokami wynosi **20 bloków**. W pętli (
 ```mermaid
 flowchart TD
     Start[Początek Iteracji] --> CheckAir{Czy blok to Air?}
-    CheckAir -- Nie (Trafienie!) --> Interact[Obsłuż interakcję: Lewy=Zniszcz, Prawy=Postaw]
+    CheckAir -- Nie (Trafienie!) --> Interact[Obsłuż interakcję - Lewy=Zniszcz, Prawy=Postaw]
     Interact --> Exit([Koniec])
     
     CheckAir -- Tak --> Compare{Wybierz najmniejszy tMax}
     
     Compare -- tMaxX najmniejszy --> StepX[x += stepX \n tMaxX += tDeltaX \n Zapisz normalną X]
-    Compare -- tMaxY najmniejszy --> StepY[y += stepY \n tMaxY += tDeltaY \n Zapisz normalną Y]
+    Compare -- tMaxY najmniejszy --> StepY[y += stepY \n tMaxY += tDeltaY \n Zapisz normalną Z]
     Compare -- tMaxZ najmniejszy --> StepZ[z += stepZ \n tMaxZ += tDeltaZ \n Zapisz normalną Z]
     
     StepX --> Next[Przejdź do kolejnej iteracji]

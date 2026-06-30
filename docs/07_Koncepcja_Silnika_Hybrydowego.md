@@ -11,19 +11,19 @@ Poniższy diagram klas przedstawia nowo dodane komponenty i ich integrację z is
 ```mermaid
 classDiagram
     class VoxelEngine {
-        -std::unique_ptr~Window~ m_window
-        -std::unique_ptr~Input~ m_input
-        -std::unique_ptr~Camera~ m_camera
-        -std::unique_ptr~World~ m_world
-        -std::unique_ptr~PhysicsSystem~ m_physicsSystem
-        -std::unique_ptr~AssetManager~ m_assetManager
+        -unique_ptr~Window~ m_window
+        -unique_ptr~Input~ m_input
+        -unique_ptr~Camera~ m_camera
+        -unique_ptr~World~ m_world
+        -unique_ptr~PhysicsSystem~ m_physicsSystem
+        -unique_ptr~AssetManager~ m_assetManager
         -VulkanContext m_vulkanContext
         +run()
     }
     class World {
-        -std::unordered_map~ChunkCoord, unique_ptr~Chunk~~ m_chunkMap
-        -std::vector~unique_ptr~Entity~~ m_entities
-        -std::unique_ptr~VoxelParticleSystem~ m_particleSystem
+        -unordered_map~ChunkCoord, unique_ptr~Chunk~ ~ m_chunkMap
+        -vector~unique_ptr~Entity~ ~ m_entities
+        -unique_ptr~VoxelParticleSystem~ m_particleSystem
         +update(deltaTime)
         +digAt(rayStart, rayDir)
     }
@@ -40,23 +40,23 @@ classDiagram
         +checkRaycast(start, dir, outBlockPos) bool
     }
     class AssetManager {
-        -std::unordered_map~string, MeshData~ m_loadedMeshes
+        -unordered_map~string, MeshData~ m_loadedMeshes
         +loadVoxelMesh(filepath) Mesh*
     }
     class Entity {
-        -glm::vec3 m_position
-        -glm::vec3 m_rotation
+        -vec3 m_position
+        -vec3 m_rotation
         -Mesh* m_mesh
         -PhysicsBody m_physicsBody
         +update(deltaTime)
     }
     class VoxelParticleSystem {
-        -std::vector~Particle~ m_particles
+        -vector~Particle~ m_particles
         +spawnSandParticle(pos, velocity)
         +update(deltaTime, world, physics)
     }
     class VulkanContext {
-        -std::unique_ptr~MegaBuffer~ m_megaVertexBuffer
+        -unique_ptr~MegaBuffer~ m_megaVertexBuffer
         +drawFrame(viewMatrix, chunks, entities)
         -drawChunks()
         -drawEntities()

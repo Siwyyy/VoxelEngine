@@ -9,61 +9,64 @@ Definicja klasy znajduje się w pliku [World.h](../../src/world/World.h), a jej 
 ## 🏗️ Definicja Klasy (`World.h`)
 
 ```cpp
-class World
+namespace voxl
 {
-public:
-    World() = delete;
-    explicit World(VulkanContext* context);
-    ~World();
+    class World
+    {
+    public:
+        World() = delete;
+        explicit World(VulkanContext* context);
+        ~World();
 
-    void update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, float deltaTime);
-    void changeWorld(const std::string& newPath);
-    [[nodiscard]] const std::string& getWorldPath() const { return m_worldPath; }
+        void update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, float deltaTime);
+        void changeWorld(const std::string& newPath);
+        [[nodiscard]] const std::string& getWorldPath() const { return m_worldPath; }
 
-    [[nodiscard]] int getRenderDistance() const { return m_renderDistance; }
-    void setRenderDistance(const int distance) { m_renderDistance = distance; }
+        [[nodiscard]] int getRenderDistance() const { return m_renderDistance; }
+        void setRenderDistance(const int distance) { m_renderDistance = distance; }
 
-    void saveAllChunks() const;
+        void saveAllChunks() const;
 
-    void processPlayerInteraction(const glm::vec3& cameraPos, const glm::vec3& cameraFront, bool leftClick, bool rightClick);
-    [[nodiscard]] Block getBlockAt(int x, int y, int z) const;
-    void setBlockAt(int x, int y, int z, Block block);
+        void processPlayerInteraction(const glm::vec3& cameraPos, const glm::vec3& cameraFront, bool leftClick, bool rightClick);
+        [[nodiscard]] Block getBlockAt(int x, int y, int z) const;
+        void setBlockAt(int x, int y, int z, Block block);
 
-    [[nodiscard]] const std::vector<Chunk*>& getActiveChunks() const { return m_activeChunks; }
+        [[nodiscard]] const std::vector<Chunk*>& getActiveChunks() const { return m_activeChunks; }
 
-private:
-    VulkanContext* m_vulkanContext;
+    private:
+        VulkanContext* m_vulkanContext;
 
-    struct ChunkCoord {
-        int x, y, z;
-        bool operator==(const ChunkCoord& other) const { return x == other.x && y == other.y && z == other.z; }
+        struct ChunkCoord {
+            int x, y, z;
+            bool operator==(const ChunkCoord& other) const { return x == other.x && y == other.y && z == other.z; }
+        };
+
+        struct ChunkCoordHash {
+            std::size_t operator()(const ChunkCoord& k) const {
+                return std::hash<int>()(k.x) ^ (std::hash<int>()(k.y) << 1) ^ (std::hash<int>()(k.z) << 2);
+            }
+        };
+
+        std::unordered_map<ChunkCoord, std::unique_ptr<Chunk>, ChunkCoordHash> m_chunkMap;
+        std::vector<Chunk*> m_activeChunks;
+
+        int m_renderDistance    = 8;
+        float m_updateTimer     = 0.0f;
+        std::string m_worldPath = "saves/world1/";
+
+        struct ChunkGarbage {
+            std::unique_ptr<Chunk> chunk;
+            uint64_t frameRemoved;
+        };
+
+        std::vector<ChunkGarbage> m_chunksToDelete;
+        std::mutex m_deletionMutex;
+        uint64_t m_frameCount = 0;
+
+        std::unordered_map<ChunkCoord, std::future<std::unique_ptr<Chunk>>, ChunkCoordHash> m_chunkFutures;
+        std::unique_ptr<ThreadPool> m_threadPool;
     };
-
-    struct ChunkCoordHash {
-        std::size_t operator()(const ChunkCoord& k) const {
-            return std::hash<int>()(k.x) ^ (std::hash<int>()(k.y) << 1) ^ (std::hash<int>()(k.z) << 2);
-        }
-    };
-
-    std::unordered_map<ChunkCoord, std::unique_ptr<Chunk>, ChunkCoordHash> m_chunkMap;
-    std::vector<Chunk*> m_activeChunks;
-
-    int m_renderDistance    = 8;
-    float m_updateTimer     = 0.0f;
-    std::string m_worldPath = "saves/world1/";
-
-    struct ChunkGarbage {
-        std::unique_ptr<Chunk> chunk;
-        uint64_t frameRemoved;
-    };
-
-    std::vector<ChunkGarbage> m_chunksToDelete;
-    std::mutex m_deletionMutex;
-    uint64_t m_frameCount = 0;
-
-    std::unordered_map<ChunkCoord, std::future<std::unique_ptr<Chunk>>, ChunkCoordHash> m_chunkFutures;
-    std::unique_ptr<ThreadPool> m_threadPool;
-};
+}
 ```
 
 ---

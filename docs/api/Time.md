@@ -9,21 +9,24 @@ Definicja klasy znajduje się w nagłówku [Time.h](../../src/core/Time.h).
 ## 🏗️ Definicja Klasy (`Time.h`)
 
 ```cpp
-class Time
+namespace voxl
 {
-public:
-    static void init();
-    static void tick();
+    class Time
+    {
+    public:
+        static void init();
+        static void tick();
 
-    [[nodiscard]] static float getDeltaTime();
-    [[nodiscard]] static float getTime();
+        [[nodiscard]] static float getDeltaTime();
+        [[nodiscard]] static float getTime();
 
-private:
-    inline static std::chrono::time_point<std::chrono::high_resolution_clock> s_startTime;
-    inline static std::chrono::time_point<std::chrono::high_resolution_clock> s_lastTime;
-    inline static float s_deltaTime = 0.0f;
-    inline static float s_time      = 0.0f;
-};
+    private:
+        inline static std::chrono::time_point<std::chrono::high_resolution_clock> s_startTime;
+        inline static std::chrono::time_point<std::chrono::high_resolution_clock> s_lastTime;
+        inline static float s_deltaTime = 0.0f;
+        inline static float s_time      = 0.0f;
+    };
+}
 ```
 
 ---

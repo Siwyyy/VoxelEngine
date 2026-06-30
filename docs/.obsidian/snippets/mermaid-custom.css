@@ -1,0 +1,276 @@
+/* ====================================================================
+   PREMIUM CUSTOM CSS FOR MERMAID DIAGRAMS (OPTIMIZED CHARCOAL THEME)
+   ==================================================================== */
+
+/* 1. Globalne style i tło (ciemny grafit) - Domyślna czcionka proporcjonalna dla zgodności z wyliczeniami szerokości */
+.mermaid,
+.mermaid svg,
+svg[id^="mermaid-"],
+.better-mermaid-container,
+.better-mermaid-container svg {
+    font-family: var(--font-interface, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif) !important;
+    background: #141416 !important; /* Ciemnografitowe tło */
+    border-radius: 8px !important;
+}
+
+/* Wyłączenie systemowej inwersji kolorów */
+.theme-dark .mermaid > svg,
+.theme-dark .better-mermaid-container svg {
+    filter: none !important;
+}
+
+/* 2. Klasy i boksy (Class Diagram & Flowchart Nodes) */
+.mermaid g.classGroup rect,
+.mermaid g.classGroup .outer,
+.mermaid g.classGroup .inner,
+.mermaid .node rect,
+.mermaid .node circle,
+.mermaid .node polygon,
+.mermaid .node path,
+.mermaid .node .label-container,
+.mermaid .node .node-container,
+.mermaid .label-container,
+.better-mermaid-container g.classGroup rect,
+.better-mermaid-container .node rect,
+svg[id^="mermaid-"] g.classGroup rect,
+svg rect,
+.classBox {
+    fill: #1e1e24 !important;      /* Ciemniejsze tło boksów */
+    stroke: #5856d6 !important;    /* Fioletowa ramka */
+    stroke-width: 1.5px !important;
+    rx: 6px !important;            /* Zaokrąglone rogi */
+    ry: 6px !important;
+}
+
+/* Podświetlenie klasy/węzła po najechaniu myszką */
+.mermaid g.classGroup:hover rect,
+.mermaid .node:hover rect {
+    stroke: #ff7675 !important;    /* Kontrastowy koralowy róż przy hover */
+    filter: drop-shadow(0 0 6px rgba(255, 118, 117, 0.6)) !important;
+}
+
+/* Węzły warunkowe (Diamenty / Decyzje) */
+.mermaid .node.question polygon,
+.mermaid .node.question rect,
+.node.question polygon {
+    fill: #2c251e !important;      /* Ciemny brąz */
+    stroke: #ff9500 !important;    /* Pomarańczowa ramka */
+    stroke-width: 1.5px !important;
+}
+
+/* Węzły start/koniec */
+.mermaid .node.state-start rect,
+.mermaid .node.state-end rect,
+.node.state-start rect {
+    stroke: #2ecc71 !important;    /* Jaskrawa zieleń */
+    stroke-width: 1.5px !important;
+}
+
+/* 3. Wymuszenie MAKSYMALNIE JASNEGO TEKSTU (Biel #FFFFFF) - GLOBALNE DLA CAŁEGO SVG */
+/* Targetowanie elementów HTML wewnątrz SVG */
+svg *,
+.mermaid *,
+.better-mermaid-container * {
+    font-family: var(--font-interface, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif) !important;
+    color: #ffffff !important;     /* Czysta biel dla HTML (div, span) */
+}
+
+/* Zapobiegamy czarnym tło-boksom na tekstach wewnątrz węzłów */
+.mermaid .node *,
+.mermaid .node span,
+.mermaid .node div {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+/* Targetowanie natywnych tekstów SVG na poziomie globalnym */
+svg text,
+svg tspan,
+svg text tspan,
+.classText,
+.classText tspan,
+.nodeText,
+.nodeText tspan,
+.title,
+.title tspan,
+text,
+tspan {
+    font-family: var(--font-interface, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif) !important;
+    fill: #ffffff !important;      /* Wymuszenie bieli dla SVG */
+    font-size: 13px !important;
+    font-weight: 500 !important;
+}
+
+/* 3a. Wyłączne wymuszenie JetBrains Mono dla kodu w diagramach klas */
+.theme-dark .mermaid g.classGroup text,
+.theme-dark .mermaid g.classGroup tspan,
+.theme-dark .mermaid g.classGroup .label,
+.theme-dark .mermaid .classText,
+.theme-dark .mermaid .classText tspan,
+.theme-dark .mermaid .title,
+.theme-dark .mermaid .title tspan,
+.mermaid g.classGroup text,
+.mermaid g.classGroup tspan,
+.mermaid g.classGroup .label,
+g.classGroup text,
+g.classGroup tspan,
+g.classGroup .label,
+.classText,
+.classText tspan,
+.title,
+.title tspan {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+}
+
+/* Pogrubienie nagłówków klas */
+g.classGroup .title,
+g.classGroup .title tspan,
+.node .title,
+.title {
+    font-weight: 700 !important;
+    font-size: 14px !important;
+}
+
+/* Wyraźniejsze linie podziału w klasach */
+g.classGroup line,
+svg line {
+    stroke: #3a3a4a !important;    /* Linie separatorów */
+    stroke-width: 1px !important;
+}
+
+/* 4. Linie relacji i strzałki (Grubsze i jaśniejsze) */
+.edgePath .path,
+.relation,
+.relationLine,
+.mermaid .path,
+svg path.path {
+    stroke: #8e8e93 !important;    /* Szary dla linii */
+    stroke-width: 1.5px !important;
+}
+
+/* Kolor strzałek */
+marker,
+marker path {
+    fill: #8e8e93 !important;
+    stroke: none !important;
+}
+
+/* 5. Etykiety relacji (Ciemne tło z szarym/białym tekstem) */
+.edgeLabel rect,
+.edgeLabel .label-container,
+svg .edgeLabel rect {
+    fill: #141416 !important;            /* Ciemnografitowy boks dla SVG */
+    stroke: #3a3a4a !important;          /* Szara ramka etykiety */
+    stroke-width: 1px !important;
+    rx: 4px !important;
+    ry: 4px !important;
+}
+
+/* Stylizacja wyłącznie rzeczywistej etykiety tekstowej HTML (unikamy kapsułek na pustych span/div) */
+.edgeLabel span.edgeLabel {
+    display: inline-block !important;
+    background-color: #141416 !important;/* Ciemnografitowe tło */
+    background: #141416 !important;
+    border: 1px solid #3a3a4a !important;/* Szara ramka */
+    border-radius: 4px !important;
+    padding: 2px 6px !important;         /* Subtelny margines wewnętrzny */
+    white-space: nowrap !important;     /* Zapobiega łamaniu linii tekstu */
+    color: #aeaeb2 !important;           /* Czytelny jasnoszary kolor */
+    font-weight: 500 !important;
+    font-size: 12px !important;
+}
+
+/* Zapobiegamy dziedziczeniu teł przez dzieci etykiety */
+.edgeLabel span.edgeLabel * {
+    background-color: transparent !important;
+    background: transparent !important;
+    border: none !important;
+    padding: 0 !important;
+}
+
+/* Usuwamy niepożądane jasne tła z kontenerów nadrzędnych HTML (div, p, label) */
+.edgeLabel foreignObject div,
+.edgeLabel foreignObject p,
+.edgeLabel div,
+.edgeLabel p,
+.edgeLabel .label,
+.edgeLabel .label-container {
+    background-color: transparent !important;
+    background: transparent !important;
+    border: none !important;
+}
+
+.edgeLabel text,
+.edgeLabel tspan,
+.relation text,
+.edgeTerminals text,
+.edgeTerminals tspan,
+svg .edgeLabel text,
+svg .edgeLabel tspan {
+    fill: #aeaeb2 !important;            /* Kolor tekstu relacji dla SVG */
+    color: #aeaeb2 !important;           /* Kolor tekstu relacji dla HTML */
+    font-size: 12px !important;
+    font-weight: 500 !important;
+}
+
+/* Wymuszenie braku obcinania (clipping) dla elementów HTML wewnątrz SVG */
+.mermaid foreignObject,
+svg foreignObject {
+    overflow: visible !important;       /* Pozwala na rysowanie paddingu poza wymiar ramki */
+}
+
+/* 6. Specyficzne style dla diagramów Gantta (Gantt Chart) */
+.mermaid rect.section,
+.mermaid .section,
+.mermaid rect.section0,
+.mermaid rect.section1,
+.mermaid rect.section2,
+.mermaid rect.section3,
+.mermaid rect.sectionTitleRef,
+.mermaid .sectionTitleRef,
+.mermaid .sectionTitle,
+svg rect.sectionTitleRef,
+svg rect.section {
+    fill: #141416 !important;      /* Ciemnografitowe tło sekcji i wierszy */
+    stroke: none !important;
+}
+
+/* Naprzemienne rzędy dla kontrastu */
+.mermaid rect.section1,
+.mermaid rect.section3,
+svg rect.section1,
+svg rect.section3 {
+    fill: #1e1e24 !important;      /* Nieco jaśniejsze tło dla wierszy nieparzystych */
+}
+
+/* Teksty w diagramie Gantta */
+.mermaid .sectionTitle,
+.mermaid .titleText,
+.mermaid .taskText,
+.mermaid .taskTextOutsideLeft,
+.mermaid .taskTextOutsideRight,
+.mermaid .taskTextInside,
+svg .sectionTitle,
+svg .titleText,
+svg .taskText,
+svg .taskTextOutsideLeft,
+svg .taskTextOutsideRight,
+svg .taskTextInside {
+    fill: #ffffff !important;      /* Biel dla wszystkich etykiet tekstowych */
+    color: #ffffff !important;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace !important;
+}
+
+/* Linie siatki w Gantt */
+.mermaid .grid line,
+.mermaid .tick line,
+svg .grid line,
+svg .tick line {
+    stroke: #3a3a4a !important;    /* Delikatne, ciemniejsze linie siatki */
+    stroke-width: 1px !important;
+}
+
+.mermaid .tick text,
+svg .tick text {
+    fill: #aeaeb2 !important;      /* Stonowany szary dla osi czasu */
+}
