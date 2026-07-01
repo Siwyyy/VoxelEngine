@@ -31,22 +31,16 @@ namespace voxl
     Chunk::Chunk(const glm::vec3 position, MegaBuffer* vb, MegaBuffer* ib)
         : m_position(position), m_megaVertexBuffer(vb), m_megaIndexBuffer(ib)
     {
+        m_blocks.fill(BlockType::Air);
+
         m_noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2);
         m_noise.SetFrequency(0.003f); // Bardzo niska częstotliwość dla długich, łagodnych wzgórz
-
-        m_blocks.fill(BlockType::Air);
     }
 
     Chunk::~Chunk()
     {
-        if (m_vertexAllocation.valid)
-        {
-            m_megaVertexBuffer->free(m_vertexAllocation);
-        }
-        if (m_indexAllocation.valid)
-        {
-            m_megaIndexBuffer->free(m_indexAllocation);
-        }
+        if (m_vertexAllocation.has_value()) m_megaVertexBuffer->free(*m_vertexAllocation);
+        if (m_indexAllocation.has_value()) m_megaIndexBuffer->free(*m_indexAllocation);
     }
 
     void Chunk::generateTerrain()
@@ -91,15 +85,15 @@ namespace voxl
 
     void Chunk::buildMesh()
     {
-        if (m_vertexAllocation.valid)
+        if (m_vertexAllocation.has_value())
         {
-            m_megaVertexBuffer->free(m_vertexAllocation);
-            m_vertexAllocation.valid = false;
+            m_megaVertexBuffer->free(*m_vertexAllocation);
+            m_vertexAllocation.reset();
         }
-        if (m_indexAllocation.valid)
+        if (m_indexAllocation.has_value())
         {
-            m_megaIndexBuffer->free(m_indexAllocation);
-            m_indexAllocation.valid = false;
+            m_megaIndexBuffer->free(*m_indexAllocation);
+            m_indexAllocation.reset();
         }
 
         std::vector<Vertex> vertices;
@@ -281,18 +275,20 @@ namespace voxl
         if (m_indexCount > 0)
         {
             auto vertexSize    = static_cast<uint32_t>(sizeof(Vertex) * vertices.size());
-            m_vertexAllocation = m_megaVertexBuffer->allocate(vertexSize);
-            if (m_vertexAllocation.valid)
-            {
-                m_megaVertexBuffer->upload(m_vertexAllocation, vertices.data());
-            }
+            m_vertexAllocation = m_megaVertexBuffer->allocate(vertexSize)
+                                                    .and_then([&](const BlockAllocation& alloc) -> std::optional<BlockAllocation>
+                                                     {
+                                                         m_megaVertexBuffer->upload(alloc, std::span<const Vertex>{vertices});
+                                                         return alloc;
+                                                     });
 
             auto indexSize    = static_cast<uint32_t>(sizeof(indices[0]) * indices.size());
-            m_indexAllocation = m_megaIndexBuffer->allocate(indexSize);
-            if (m_indexAllocation.valid)
-            {
-                m_megaIndexBuffer->upload(m_indexAllocation, indices.data());
-            }
+            m_indexAllocation = m_megaIndexBuffer->allocate(indexSize)
+                                                  .and_then([&](const BlockAllocation& alloc) -> std::optional<BlockAllocation>
+                                                   {
+                                                       m_megaIndexBuffer->upload(alloc, std::span<const uint32_t>{indices});
+                                                       return alloc;
+                                                   });
         }
     }
 

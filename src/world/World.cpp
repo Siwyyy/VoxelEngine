@@ -18,17 +18,17 @@ namespace voxl
         int workerThreads                  = std::max(2, static_cast<int>(hardwareThreads) - 2);
         m_threadPool                       = std::make_unique<ThreadPool>(workerThreads);
 
-        std::println("Initializing World Manager (render distance: {})...", m_renderDistance); // NOLINT(modernize-use-std-print)
+        std::println("Initializing World Manager (render distance: {})...", m_renderDistance);
     }
 
     World::~World() noexcept // NOLINT(bugprone-exception-escape)
     {
         try
         {
-            for (auto& [fst, snd]: m_chunkMap)
+            for (auto& [coord, chunk]: m_chunkMap)
             {
-                std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, fst.x, fst.y, fst.z);
-                snd->save(filepath);
+                std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, coord.x, coord.y, coord.z);
+                chunk->save(filepath);
             }
             m_chunkMap.clear();
         }
@@ -93,27 +93,24 @@ namespace voxl
             };
             std::vector<ChunkScore> expectedChunks;
 
-            for (int x = -m_renderDistance; x <= m_renderDistance; ++x)
+            auto coords = std::views::cartesian_product(std::views::iota(-m_renderDistance, m_renderDistance + 1),
+                                                        std::views::iota(-m_renderDistance, m_renderDistance + 1),
+                                                        std::views::iota(-m_renderDistance, m_renderDistance + 1));
+            for (const auto [x, y, z]: coords)
             {
-                for (int y = -m_renderDistance; y <= m_renderDistance; ++y)
+                if (x * x + y * y + z * z <= m_renderDistance * m_renderDistance)
                 {
-                    for (int z = -m_renderDistance; z <= m_renderDistance; ++z)
+                    ChunkCoord coord = {.x = currentChunkX + x, .y = currentChunkY + y, .z = currentChunkZ + z};
+                    if (!m_chunkMap.contains(coord) && !m_chunkFutures.contains(coord))
                     {
-                        if (x * x + y * y + z * z <= m_renderDistance * m_renderDistance)
-                        {
-                            ChunkCoord coord = {.x = currentChunkX + x, .y = currentChunkY + y, .z = currentChunkZ + z};
-                            if (!m_chunkMap.contains(coord) && !m_chunkFutures.contains(coord))
-                            {
-                                glm::vec3 pos((static_cast<float>(coord.x) + 0.5f) * chunkPhysicalSize,
-                                              (static_cast<float>(coord.y) + 0.5f) * chunkPhysicalSize,
-                                              (static_cast<float>(coord.z) + 0.5f) * chunkPhysicalSize);
-                                glm::vec3 dir = pos - cameraPos;
-                                float dist    = glm::length(dir);
-                                float dot     = dist > 0.1f ? glm::dot(dir / dist, cameraFront) : 1.0f;
-                                float score   = dist * (2.0f - dot);
-                                expectedChunks.push_back({.coord = coord, .score = score});
-                            }
-                        }
+                        glm::vec3 pos((static_cast<float>(coord.x) + 0.5f) * chunkPhysicalSize,
+                                      (static_cast<float>(coord.y) + 0.5f) * chunkPhysicalSize,
+                                      (static_cast<float>(coord.z) + 0.5f) * chunkPhysicalSize);
+                        glm::vec3 dir = pos - cameraPos;
+                        float dist    = glm::length(dir);
+                        float dot     = dist > 0.1f ? glm::dot(dir / dist, cameraFront) : 1.0f;
+                        float score   = dist * (2.0f - dot);
+                        expectedChunks.push_back({.coord = coord, .score = score});
                     }
                 }
             }

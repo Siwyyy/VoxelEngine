@@ -274,3 +274,21 @@ svg .tick line {
 svg .tick text {
     fill: #aeaeb2 !important;      /* Stonowany szary dla osi czasu */
 }
+
+/* 7. Style dla diagramów sekwencji (Sequence Diagram) - Loop / Alt / Opt Box Labels */
+.mermaid .labelBox,
+svg .labelBox,
+.better-mermaid-container .labelBox {
+    fill: #1e1e24 !important;      /* Ciemniejsze tło dla kafelków alt/loop */
+    stroke: #3a3a4a !important;    /* Szara obwódka */
+    stroke-width: 1px !important;
+}
+
+.mermaid .labelText,
+.mermaid .loopText,
+svg .labelText,
+svg .loopText {
+    fill: #ffffff !important;      /* Wymuszenie białego tekstu wewnątrz alt/loop */
+    color: #ffffff !important;
+}
+

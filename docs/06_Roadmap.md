@@ -55,7 +55,7 @@ Stopniowe wprowadzanie nowoczesnych standardów języka w celu poprawy bezpiecze
 - [x] **Formatowanie ścieżek i logów (`std::format` / `std::print`)**: Zastąpienie wolnego `std::stringstream` oraz klasycznego `std::cout`/`std::cerr` przez `std::format` i C++23-standardowe `std::print`/`std::println`.
 
 ### 🎨 Renderer & Vulkan
-- [ ] **Zastąpienie par wskaźnik + rozmiar przez `std::span`**: Zabezpieczenie operacji kopiowania buforów w `MegaBuffer` poprzez templatyzowane `upload` przyjmujące `std::span<const T>`.
-- [ ] **Potoki `std::ranges` w generowaniu komend rysowania**: Zastąpienie tradycyjnej pętli generującej komendy pośrednie rysowania (`VkDrawIndexedIndirectCommand`) w `VulkanContext::drawFrame` potokiem z `std::views::filter` i `std::views::transform`, kopiującym dane bezpośrednio do zmapowanej pamięci za pomocą `std::ranges::copy`.
-- [ ] **Monadyczny `std::optional` w alokacji**: Zmiana typu zwracanego przez `MegaBuffer::allocate` na `std::optional<BlockAllocation>` i wykorzystanie operacji łańcuchowych takich jak `and_then` lub `or_else`.
+- [x] **Zastąpienie par wskaźnik + rozmiar przez `std::span`**: Zabezpieczenie operacji kopiowania buforów w `MegaBuffer` poprzez templatyzowane `upload` przyjmujące `std::span<const T>`.
+- [x] **Potoki `std::ranges` w generowaniu komend rysowania**: Zastąpienie tradycyjnej pętli generującej komendy pośrednie rysowania (`VkDrawIndexedIndirectCommand`) w `VulkanContext::drawFrame` potokiem z `std::views::filter` i `std::views::transform`, kopiującym dane bezpośrednio do zmapowanej pamięci za pomocą `std::ranges::copy`.
+- [x] **Monadyczny `std::optional` w alokacji**: Zmiana typu zwracanego przez `MegaBuffer::allocate` na `std::optional<BlockAllocation>` i wykorzystanie operacji łańcuchowych takich jak `and_then` lub `or_else`.
 - [x] **Optymalizacja `std::vector` na `std::array` w Vertex**: Zmiana typu zwracanego z `Vertex::getAttributeDescriptions()` na `std::array<VkVertexInputAttributeDescription, 2>`, eliminująca dynamiczną alokację wektora.

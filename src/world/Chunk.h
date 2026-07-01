@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -27,7 +28,7 @@ namespace voxl
         uint8_t metadata;
 
         Block() : type(BlockType::Air), metadata(0) {}
-        Block(const BlockType t, const uint8_t m = 0) : type(t), metadata(m) {}
+        Block(const BlockType t, const uint8_t m = 0) : type(t), metadata(m) {} // NOLINT(google-explicit-constructor)
 
         bool operator==(const Block& other) const { return type == other.type && metadata == other.metadata; }
         bool operator!=(const Block& other) const { return !(*this == other); }
@@ -63,17 +64,17 @@ namespace voxl
         [[nodiscard]] bool isDirty() const { return m_isDirty; }
         [[nodiscard]] bool isSaveDirty() const { return m_isSaveDirty; }
 
-        [[nodiscard]] bool hasValidAllocation() const { return m_vertexAllocation.valid && m_indexAllocation.valid; }
-        [[nodiscard]] uint32_t getVertexOffset() const { return m_vertexAllocation.offset; }
-        [[nodiscard]] uint32_t getIndexOffset() const { return m_indexAllocation.offset; }
+        [[nodiscard]] bool hasValidAllocation() const { return m_vertexAllocation.has_value() && m_indexAllocation.has_value(); }
+        [[nodiscard]] uint32_t getVertexOffset() const { return m_vertexAllocation->offset; }
+        [[nodiscard]] uint32_t getIndexOffset() const { return m_indexAllocation->offset; }
 
     private:
         glm::vec3 m_position;
 
         MegaBuffer* m_megaVertexBuffer;
         MegaBuffer* m_megaIndexBuffer;
-        BlockAllocation m_vertexAllocation;
-        BlockAllocation m_indexAllocation;
+        std::optional<BlockAllocation> m_vertexAllocation;
+        std::optional<BlockAllocation> m_indexAllocation;
 
         uint32_t m_indexCount = 0;
 

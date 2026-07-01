@@ -36,10 +36,10 @@ namespace voxl
 
     constexpr int MAX_FRAMES_IN_FLIGHT = 2;
 
-#ifdef NDEBUG
-    constexpr bool ENABLE_VALIDATION_LAYERS = false;
-#else
+#ifdef ENABLE_VULKAN_VALIDATION
     constexpr bool ENABLE_VALIDATION_LAYERS = true;
+#else
+    constexpr bool ENABLE_VALIDATION_LAYERS = false;
 #endif
 
     class VulkanContext

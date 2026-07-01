@@ -38,9 +38,9 @@ namespace voxl
         }
     }
 
-    BlockAllocation MegaBuffer::allocate(uint32_t size)
+    std::optional<BlockAllocation> MegaBuffer::allocate(uint32_t size)
     {
-        if (size == 0) return {.offset = 0, .size = 0, .valid = false};
+        if (size == 0) return std::nullopt;
         std::scoped_lock lock(m_mutex);
         for (auto it = m_freeBlocks.begin(); it != m_freeBlocks.end(); ++it)
         {
@@ -49,7 +49,6 @@ namespace voxl
                 BlockAllocation alloc;
                 alloc.offset = it->offset;
                 alloc.size   = size;
-                alloc.valid  = true;
 
                 if (it->size == size)
                 {
@@ -63,37 +62,31 @@ namespace voxl
                 return alloc;
             }
         }
-        return {.offset = 0, .size = 0, .valid = false}; // Out of memory
+        return std::nullopt; // Out of memory
     }
 
     void MegaBuffer::free(const BlockAllocation& block)
     {
-        if (!block.valid) return;
         std::scoped_lock lock(m_mutex);
 
-        m_freeBlocks.push_back({.offset = block.offset, .size = block.size});
-        m_freeBlocks.sort([](const FreeBlock& a, const FreeBlock& b)
+        const auto it = m_freeBlocks.insert(std::ranges::find_if(m_freeBlocks, [&](const BlockAllocation& fb)
         {
-            return a.offset < b.offset;
-        });
+            return fb.offset > block.offset;
+        }), block);
 
-        for (auto it = m_freeBlocks.begin(); it != m_freeBlocks.end();)
+        if (const auto next = std::next(it); next != m_freeBlocks.end() && it->offset + it->size == next->offset)
         {
-            if (auto next = std::next(it); next != m_freeBlocks.end() && it->offset + it->size == next->offset)
+            it->size += next->size;
+            m_freeBlocks.erase(next);
+        }
+
+        if (it != m_freeBlocks.begin())
+        {
+            if (const auto prev = std::prev(it); prev->offset + prev->size == it->offset)
             {
-                it->size += next->size;
-                m_freeBlocks.erase(next);
-            }
-            else
-            {
-                ++it;
+                prev->size += it->size;
+                m_freeBlocks.erase(it);
             }
         }
-    }
-
-    void MegaBuffer::upload(const BlockAllocation& block, const void* data) const
-    {
-        if (!block.valid || !data) return;
-        std::memcpy(static_cast<char*>(m_mappedData) + block.offset, data, block.size);
     }
 } // namespace voxl

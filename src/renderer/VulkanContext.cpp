@@ -5,6 +5,7 @@
 #include <chrono>
 #include <limits>
 #include <print>
+#include <ranges>
 #include <set>
 #include <stdexcept>
 #include <string>
@@ -783,37 +784,33 @@ namespace voxl
         vkCmdBindIndexBuffer(commandBuffer, m_megaIndexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
         m_drawnChunksCount = 0;
-        std::vector<VkDrawIndexedIndirectCommand> indirectCommands;
 
-        for (const auto& chunk: chunks)
-        {
-            glm::vec3 minAABB = (chunk->getPosition() - glm::vec3(0.5f)) * 0.05f;
-            glm::vec3 maxAABB = (chunk->getPosition() + glm::vec3(Chunk::CHUNK_SIZE - 0.5f)) * 0.05f;
+        auto isVisible = [&frustum](const Chunk* chunk) {
+            const glm::vec3 minAABB = (chunk->getPosition() - glm::vec3(0.5f)) * 0.05f;
+            const glm::vec3 maxAABB = (chunk->getPosition() + glm::vec3(Chunk::CHUNK_SIZE - 0.5f)) * 0.05f;
+            return frustum.intersectsAABB(minAABB, maxAABB) && chunk->getIndexCount() > 0 && chunk->hasValidAllocation();
+        };
 
-            if (!frustum.intersectsAABB(minAABB, maxAABB))
-            {
-                continue;
-            }
-
-            if (chunk->getIndexCount() == 0 || !chunk->hasValidAllocation()) continue;
-
-            VkDrawIndexedIndirectCommand cmd{
+        auto toIndirectCmd = [](const Chunk* chunk) -> VkDrawIndexedIndirectCommand {
+            return {
                 .indexCount = chunk->getIndexCount(),
                 .instanceCount = 1,
                 .firstIndex = static_cast<uint32_t>(chunk->getIndexOffset() / sizeof(uint32_t)),
                 .vertexOffset = static_cast<int32_t>(chunk->getVertexOffset() / sizeof(Vertex)),
                 .firstInstance = 0
             };
+        };
 
-            indirectCommands.push_back(cmd);
-            m_drawnChunksCount++;
-        }
+        auto commandsView = chunks | std::views::filter(isVisible) | std::views::transform(toIndirectCmd);
+        
+        auto* mappedCmds = static_cast<VkDrawIndexedIndirectCommand*>(m_indirectMappedData);
+        auto [in, out]   = std::ranges::copy(commandsView, mappedCmds);
+        
+        m_drawnChunksCount = static_cast<uint32_t>(std::distance(mappedCmds, out));
 
-        if (!indirectCommands.empty())
+        if (m_drawnChunksCount > 0)
         {
-            std::memcpy(m_indirectMappedData, indirectCommands.data(),
-                        indirectCommands.size() * sizeof(VkDrawIndexedIndirectCommand));
-            vkCmdDrawIndexedIndirect(commandBuffer, m_indirectBuffer, 0, static_cast<uint32_t>(indirectCommands.size()),
+            vkCmdDrawIndexedIndirect(commandBuffer, m_indirectBuffer, 0, m_drawnChunksCount,
                                      sizeof(VkDrawIndexedIndirectCommand));
         }
 

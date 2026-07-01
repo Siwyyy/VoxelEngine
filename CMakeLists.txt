@@ -10,7 +10,6 @@ set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
 
 # Clang-Tidy static analysis option
 option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
-
 if (ENABLE_CLANG_TIDY)
     find_program(CLANG_TIDY_EXE NAMES clang-tidy
             HINTS
@@ -67,6 +66,16 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         ${GLFW_DIR}/lib/glfw3.lib
         ImGui
 )
+
+# Vulkan Validation Layers option
+option(ENABLE_VULKAN_VALIDATION "Enable Vulkan Validation Layers" OFF)
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" OR CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+    set(ENABLE_VULKAN_VALIDATION ON)
+endif()
+
+if (ENABLE_VULKAN_VALIDATION)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE ENABLE_VULKAN_VALIDATION)
+endif ()
 
 
 # Enable Precompiled Headers (PCH)
