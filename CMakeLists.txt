@@ -3,15 +3,17 @@ project(VoxelEngine)
 
 set(CMAKE_CXX_STANDARD 23)
 
-# Clang-Tidy static analysis option
-option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
 
 # pomiar czasu kompilacji
 set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE "${CMAKE_COMMAND} -E time")
 
+
+# Clang-Tidy static analysis option
+option(ENABLE_CLANG_TIDY "Enable clang-tidy static analysis" OFF)
+
 if (ENABLE_CLANG_TIDY)
     find_program(CLANG_TIDY_EXE NAMES clang-tidy
-        HINTS
+            HINTS
             "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/Llvm/x64/bin"
             "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/Llvm/x64/bin"
     )
@@ -32,17 +34,21 @@ else ()
     message(STATUS "Clang-Tidy analysis is disabled (ENABLE_CLANG_TIDY=OFF).")
 endif ()
 
+
 # Find Vulkan package
 find_package(Vulkan REQUIRED)
 
+
 # Set external dependencies directories
 set(GLFW_DIR ${CMAKE_CURRENT_SOURCE_DIR}/vendor/glfw)
+
 
 # Gather source files
 file(GLOB_RECURSE SOURCES CONFIGURE_DEPENDS "src/*.cpp" "src/*.h")
 
 add_subdirectory(vendor EXCLUDE_FROM_ALL)
 add_executable(${PROJECT_NAME} ${SOURCES})
+
 
 # Configure include paths
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -54,6 +60,7 @@ target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/vendor
 )
 
+
 # Link libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
         Vulkan::Vulkan
@@ -61,8 +68,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         ImGui
 )
 
+
 # Enable Precompiled Headers (PCH)
 target_precompile_headers(${PROJECT_NAME} PRIVATE src/pch.h)
+
 
 # Shader compilation using glslc from Vulkan SDK
 find_program(GLSLC_EXECUTABLE NAMES glslc HINTS $ENV{VULKAN_SDK}/Bin)

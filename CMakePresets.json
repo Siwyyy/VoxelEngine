@@ -13,19 +13,27 @@
       "binaryDir": "${sourceDir}/cmake-build-${presetName}"
     },
     {
-      "name": "preset-debug",
+      "name": "debug",
       "inherits": "windows-base",
-      "displayName": "Debug (Preset)",
+      "displayName": "Debug (cmake)",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug"
       }
     },
     {
-      "name": "preset-release",
+      "name": "release",
       "inherits": "windows-base",
-      "displayName": "Release (Preset)",
+      "displayName": "Release (cmake)",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "relwithdebinfo",
+      "inherits": "windows-base",
+      "displayName": "RelWithDebInfo (cmake)",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "RelWithDebInfo"
       }
     }
   ]
