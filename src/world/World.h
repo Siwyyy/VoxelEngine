@@ -40,6 +40,13 @@ namespace voxl
 
         void saveAllChunks() const;
         [[nodiscard]] const std::vector<Chunk*>& getActiveChunks() const { return m_activeChunks; }
+        
+        [[nodiscard]] size_t getQueuedChunksCount() const { return m_chunkFutures.size(); }
+        [[nodiscard]] size_t getChunksToDeleteCount() const { return m_chunksToDelete.size(); }
+
+        void setMemoryLimitGB(float limit) { m_memoryLimitGB = limit; }
+        [[nodiscard]] float getMemoryLimitGB() const { return m_memoryLimitGB; }
+        [[nodiscard]] float getEstimatedMemoryUsageGB() const;
 
     private:
         VulkanContext* m_vulkanContext;
@@ -59,10 +66,17 @@ namespace voxl
             }
         };
 
+        std::atomic<int> m_playerChunkX{0};
+        std::atomic<int> m_playerChunkY{0};
+        std::atomic<int> m_playerChunkZ{0};
+        std::atomic<int> m_atomicRenderDistance{0};
+
         std::unordered_map<ChunkCoord, std::unique_ptr<Chunk>, ChunkCoordHash> m_chunkMap;
+
         std::vector<Chunk*> m_activeChunks;
 
         int m_renderDistance    = 8;
+        float m_memoryLimitGB   = 8.0f;
         float m_updateTimer     = 0.0f;
         std::string m_worldPath = "saves/world1/";
 

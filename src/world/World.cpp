@@ -23,13 +23,13 @@ namespace voxl
 
     World::~World() noexcept // NOLINT(bugprone-exception-escape)
     {
+        for (auto& future: m_chunkFutures | std::views::values)
+        {
+            future.wait();
+        }
         try
         {
-            for (auto& [coord, chunk]: m_chunkMap)
-            {
-                std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, coord.x, coord.y, coord.z);
-                chunk->save(filepath);
-            }
+            saveAllChunks();
             m_chunkMap.clear();
         }
         catch (const std::exception& e)
@@ -42,6 +42,12 @@ namespace voxl
         }
     }
 
+    float World::getEstimatedMemoryUsageGB() const
+    {
+        const size_t totalChunks = m_chunkMap.size() + m_chunkFutures.size() + m_chunksToDelete.size();
+        return static_cast<float>(totalChunks * sizeof(Chunk)) / (1024.0f * 1024.0f * 1024.0f);
+    }
+
     void World::update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, float deltaTime)
     {
         m_updateTimer          += deltaTime;
@@ -52,7 +58,7 @@ namespace voxl
             shouldCheckChunks = true;
         }
 
-        for (auto& val: m_chunkMap | std::views::values)
+        for (const auto& val: m_chunkMap | std::views::values)
         {
             if (val->isDirty())
             {
@@ -62,10 +68,15 @@ namespace voxl
             }
         }
 
-        float chunkPhysicalSize = Chunk::CHUNK_SIZE * 0.05f;
-        int currentChunkX       = static_cast<int>(std::floor(cameraPos.x / chunkPhysicalSize));
-        int currentChunkY       = static_cast<int>(std::floor(cameraPos.y / chunkPhysicalSize));
-        int currentChunkZ       = static_cast<int>(std::floor(cameraPos.z / chunkPhysicalSize));
+        constexpr float chunkPhysicalSize = Chunk::CHUNK_SIZE * 0.05f;
+        const int currentChunkX           = static_cast<int>(std::floor(cameraPos.x / chunkPhysicalSize));
+        const int currentChunkY           = static_cast<int>(std::floor(cameraPos.y / chunkPhysicalSize));
+        const int currentChunkZ           = static_cast<int>(std::floor(cameraPos.z / chunkPhysicalSize));
+
+        m_playerChunkX.store(currentChunkX);
+        m_playerChunkY.store(currentChunkY);
+        m_playerChunkZ.store(currentChunkZ);
+        m_atomicRenderDistance.store(m_renderDistance);
 
         m_frameCount++;
 
@@ -98,7 +109,8 @@ namespace voxl
                                                         std::views::iota(-m_renderDistance, m_renderDistance + 1));
             for (const auto [x, y, z]: coords)
             {
-                if (x * x + y * y + z * z <= m_renderDistance * m_renderDistance)
+                const int r2 = (m_renderDistance + 2) * (m_renderDistance + 2);
+                if (y * y + z * z <= r2 && x * x + y * y <= r2)
                 {
                     ChunkCoord coord = {.x = currentChunkX + x, .y = currentChunkY + y, .z = currentChunkZ + z};
                     if (!m_chunkMap.contains(coord) && !m_chunkFutures.contains(coord))
@@ -106,10 +118,10 @@ namespace voxl
                         glm::vec3 pos((static_cast<float>(coord.x) + 0.5f) * chunkPhysicalSize,
                                       (static_cast<float>(coord.y) + 0.5f) * chunkPhysicalSize,
                                       (static_cast<float>(coord.z) + 0.5f) * chunkPhysicalSize);
-                        glm::vec3 dir = pos - cameraPos;
-                        float dist    = glm::length(dir);
-                        float dot     = dist > 0.1f ? glm::dot(dir / dist, cameraFront) : 1.0f;
-                        float score   = dist * (2.0f - dot);
+                        glm::vec3 dir     = pos - cameraPos;
+                        const float dist  = glm::length(dir);
+                        const float dot   = dist > 0.1f ? glm::dot(dir / dist, cameraFront) : 1.0f;
+                        const float score = dist * (2.0f - dot);
                         expectedChunks.push_back({.coord = coord, .score = score});
                     }
                 }
@@ -122,20 +134,42 @@ namespace voxl
 
             for (const auto& [coord, score]: expectedChunks)
             {
+                if (getEstimatedMemoryUsageGB() >= m_memoryLimitGB) break;
+
                 glm::vec3 pos(static_cast<float>(coord.x) * Chunk::CHUNK_SIZE,
                               static_cast<float>(coord.y) * Chunk::CHUNK_SIZE,
                               static_cast<float>(coord.z) * Chunk::CHUNK_SIZE);
                 std::string filepath = m_worldPath + "chunk_" + std::to_string(coord.x) + "_" +
                         std::to_string(coord.y) + "_" + std::to_string(coord.z) + ".bin";
 
-                m_chunkFutures[coord] = m_threadPool->enqueue([pos, vb = m_vulkanContext->getMegaVertexBuffer(), ib = m_vulkanContext->
-                        getMegaIndexBuffer(), filepath]()
+                m_chunkFutures[coord] = m_threadPool->enqueue([this, pos, vb = m_vulkanContext->getMegaVertexBuffer(), ib = m_vulkanContext->
+                        getMegaIndexBuffer(), filepath, coord]()
                     {
+                        auto checkDistance = [this, &coord]()
+                        {
+                            const int px      = m_playerChunkX.load();
+                            const int py      = m_playerChunkY.load();
+                            const int pz      = m_playerChunkZ.load();
+                            const int r       = m_atomicRenderDistance.load();
+                            const int dx      = coord.x - px;
+                            const int dy      = coord.y - py;
+                            const int dz      = coord.z - pz;
+                            const int r2      = (r + 2) * (r + 2);
+                            const bool inCylX = (dy * dy + dz * dz <= r2);
+                            const bool inCylZ = (dx * dx + dy * dy <= r2);
+                            return !(inCylX && inCylZ);
+                        };
+
+                        if (checkDistance()) return std::unique_ptr<Chunk>(nullptr);
+
                         auto chunk = std::make_unique<Chunk>(pos, vb, ib);
                         if (!chunk->load(filepath))
                         {
                             chunk->generateTerrain();
                         }
+
+                        if (checkDistance()) return std::unique_ptr<Chunk>(nullptr);
+
                         chunk->buildMesh();
                         return chunk;
                     });
@@ -143,10 +177,13 @@ namespace voxl
 
             for (auto it = m_chunkMap.begin(); it != m_chunkMap.end();)
             {
-                int dx = it->first.x - currentChunkX;
-                int dy = it->first.y - currentChunkY;
-                int dz = it->first.z - currentChunkZ;
-                if (dx * dx + dy * dy + dz * dz > (m_renderDistance + 2) * (m_renderDistance + 2))
+                const int dx      = it->first.x - currentChunkX;
+                const int dy      = it->first.y - currentChunkY;
+                const int dz      = it->first.z - currentChunkZ;
+                const int r2      = (m_renderDistance + 2) * (m_renderDistance + 2);
+                const bool inCylX = (dy * dy + dz * dz <= r2);
+                const bool inCylZ = (dx * dx + dy * dy <= r2);
+                if (!(inCylX && inCylZ))
                 {
                     std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, it->first.x, it->first.y, it->first.z);
 
@@ -173,9 +210,9 @@ namespace voxl
         {
             if (it->second.wait_for(std::chrono::seconds(0)) == std::future_status::ready)
             {
-                m_chunkMap[it->first] = it->second.get();
-                if (m_chunkMap[it->first])
+                if (auto chunk = it->second.get())
                 {
+                    m_chunkMap[it->first] = std::move(chunk);
                     m_chunkMap[it->first]->setDirty(false);
                 }
                 it = m_chunkFutures.erase(it);
@@ -312,11 +349,7 @@ namespace voxl
 
         vkDeviceWaitIdle(m_vulkanContext->getDevice());
 
-        for (const auto& [fst, snd]: m_chunkMap)
-        {
-            std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, fst.x, fst.y, fst.z);
-            snd->save(filepath);
-        }
+        saveAllChunks();
         m_chunkMap.clear();
         m_chunkFutures.clear();
         m_activeChunks.clear();

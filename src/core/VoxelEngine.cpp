@@ -243,10 +243,17 @@ namespace voxl
 
             int currentRd = m_world->getRenderDistance();
             if (ImGui::SliderInt("Render Distance", &currentRd, 2, 32)) { m_world->setRenderDistance(currentRd); }
+            
+            float memLimit = m_world->getMemoryLimitGB();
+            if (ImGui::SliderFloat("RAM Limit (GB)", &memLimit, 1.0f, 64.0f)) { m_world->setMemoryLimitGB(memLimit); }
+            
+            ImGui::Text("RAM Usage: %.2f GB / %.1f GB", m_world->getEstimatedMemoryUsageGB(), m_world->getMemoryLimitGB());
 
             const auto& activeChunks = m_world->getActiveChunks();
             ImGui::Text("Active Chunks: %zu", activeChunks.size());
             ImGui::Text("Drawn Chunks: %u", m_vulkanContext.getDrawnChunksCount());
+            ImGui::Text("Queued Chunks (Generating): %zu", m_world->getQueuedChunksCount());
+            ImGui::Text("Pending Deletion (Saving): %zu", m_world->getChunksToDeleteCount());
 
             uint32_t totalIndices = 0;
             for (const auto& chunk: activeChunks) { totalIndices += chunk->getIndexCount(); }

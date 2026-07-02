@@ -25,13 +25,12 @@ namespace voxl
     struct Block
     {
         BlockType type;
-        uint8_t metadata;
 
-        Block() : type(BlockType::Air), metadata(0) {}
-        Block(const BlockType t, const uint8_t m = 0) : type(t), metadata(m) {} // NOLINT(google-explicit-constructor)
+        Block() : type(BlockType::Air) {}
+        Block(const BlockType t) : type(t) {} // NOLINT(google-explicit-constructor)
 
-        bool operator==(const Block& other) const { return type == other.type && metadata == other.metadata; }
-        bool operator!=(const Block& other) const { return !(*this == other); }
+        bool operator==(const Block& other) const { return type == other.type; }
+        bool operator!=(const Block& other) const { return type != other.type; }
         bool operator==(const BlockType t) const { return type == t; }
         bool operator!=(const BlockType t) const { return type != t; }
 

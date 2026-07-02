@@ -297,7 +297,7 @@ namespace voxl
         if (x >= 0 && std::cmp_less(x, CHUNK_SIZE) && y >= 0 && std::cmp_less(y, CHUNK_SIZE) && z >= 0 && std::cmp_less(z, CHUNK_SIZE))
         {
             const std::mdspan<Block, std::extents<size_t, CHUNK_SIZE, CHUNK_SIZE, CHUNK_SIZE>> span(m_blocks.data());
-            if (span[x, y, z].type != block.type || span[x, y, z].metadata != block.metadata)
+            if (span[x, y, z].type != block.type)
             {
                 span[x, y, z] = block;
                 m_isDirty     = true;
@@ -379,7 +379,7 @@ namespace voxl
 
             for (uint32_t i = 0; i < count && index < m_blocks.size(); ++i)
             {
-                m_blocks[index++] = {type, 0};
+                m_blocks[index++] = {type};
             }
         }
         m_isDirty = false;
