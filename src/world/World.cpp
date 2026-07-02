@@ -42,12 +42,6 @@ namespace voxl
         }
     }
 
-    float World::getEstimatedMemoryUsageGB() const
-    {
-        const size_t totalChunks = m_chunkMap.size() + m_chunkFutures.size() + m_chunksToDelete.size();
-        return static_cast<float>(totalChunks * sizeof(Chunk)) / (1024.0f * 1024.0f * 1024.0f);
-    }
-
     void World::update(const glm::vec3& cameraPos, const glm::vec3& cameraFront, float deltaTime)
     {
         m_updateTimer          += deltaTime;
@@ -436,5 +430,11 @@ namespace voxl
             std::string filepath = std::format("{}chunk_{}_{}_{}.bin", m_worldPath, fst.x, fst.y, fst.z);
             snd->save(filepath);
         }
+    }
+
+    float World::getEstimatedMemoryUsageGB() const
+    {
+        const size_t totalChunks = m_chunkMap.size() + m_chunkFutures.size() + m_chunksToDelete.size();
+        return static_cast<float>(totalChunks * sizeof(Chunk)) / (1024.0f * 1024.0f * 1024.0f);
     }
 } // namespace voxl
